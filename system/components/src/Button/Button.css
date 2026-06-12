@@ -1,0 +1,79 @@
+.ds-button {
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-pill);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: 700;
+  gap: var(--ds-space-2);
+  justify-content: center;
+  line-height: 1;
+  min-height: 2.5rem;
+  transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.ds-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+  transform: none;
+}
+
+.ds-button:focus-visible {
+  box-shadow: var(--ds-focus-ring);
+  outline: none;
+}
+
+.ds-button:hover {
+  transform: translateY(-1px);
+}
+
+.ds-button:disabled:hover {
+  transform: none;
+}
+
+.ds-button--sm {
+  font-size: 0.875rem;
+  min-height: 2rem;
+  padding: 0 var(--ds-space-4);
+}
+
+.ds-button--md {
+  padding: 0 var(--ds-space-5);
+}
+
+.ds-button--primary {
+  background: var(--ds-color-primary);
+  color: var(--ds-color-text-inverse);
+}
+
+.ds-button--primary:hover {
+  background: var(--ds-color-primary-strong);
+}
+
+.ds-button--secondary {
+  background: var(--ds-color-primary-wash);
+  border-color: var(--ds-color-primary-border);
+  box-shadow: var(--ds-shadow-sm);
+  color: var(--ds-color-primary-strong);
+}
+
+.ds-button--secondary:hover {
+  background: var(--ds-color-primary-soft);
+  border-color: var(--ds-color-primary-border);
+}
+
+.ds-button--ghost {
+  background: transparent;
+  color: var(--ds-color-primary-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-button {
+    transition: none;
+  }
+
+  .ds-button:hover {
+    transform: none;
+  }
+}

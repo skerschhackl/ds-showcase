@@ -1,0 +1,62 @@
+.ds-ai-control-frame {
+  background: var(--ds-color-surface);
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-ai-glow);
+  isolation: isolate;
+  overflow: hidden;
+  padding: 1px;
+  position: relative;
+}
+
+.ds-ai-control-frame::before {
+  animation: ds-ai-border-color-cycle var(--ds-motion-ai-ambient-duration) linear infinite;
+  background: var(--ds-gradient-ai-border);
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  will-change: filter;
+}
+
+.ds-ai-control-frame::before {
+  border-radius: inherit;
+  inset: 0;
+  opacity: 0.82;
+  z-index: 0;
+}
+
+.ds-ai-control-frame::after {
+  content: none;
+}
+
+.ds-ai-control-frame:focus-within {
+  box-shadow:
+    var(--ds-focus-ring),
+    var(--ds-shadow-ai-glow);
+}
+
+.ds-ai-control-frame .ds-ai-control {
+  background: var(--ds-color-surface);
+  border: 0;
+  border-radius: calc(var(--ds-radius-md) - 1px);
+  box-shadow: none;
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+
+.ds-ai-control-frame .ds-ai-control:focus {
+  box-shadow: none;
+}
+
+@keyframes ds-ai-border-color-cycle {
+  to {
+    filter: hue-rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-ai-control-frame::before {
+    animation: none;
+  }
+}

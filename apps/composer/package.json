@@ -1,0 +1,16 @@
+{
+  "name": "@ds/composer",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "@ds/ai-contracts": "0.1.0"
+  },
+  "scripts": {
+    "dev": "npm --workspace @ds/ai-contracts run build && node src/server.mjs",
+    "build": "node src/server.mjs --check",
+    "typecheck": "node src/server.mjs --check",
+    "lint": "node src/server.mjs --check",
+    "test": "vitest run"
+  }
+}

@@ -1,0 +1,35 @@
+.ds-alert {
+  border: 1px solid var(--ds-color-border-semantic-subtle);
+  border-radius: var(--ds-radius-md);
+  display: grid;
+  gap: var(--ds-space-1);
+  padding: var(--ds-space-4);
+}
+
+.ds-alert__title {
+  font: inherit;
+  font-weight: 800;
+  margin: 0;
+}
+
+.ds-alert--neutral {
+  background: var(--ds-color-surface-raised);
+}
+
+.ds-alert--success {
+  background: var(--ds-color-success-surface);
+  border-color: var(--ds-color-success-border);
+  color: var(--ds-color-success-text);
+}
+
+.ds-alert--warning {
+  background: var(--ds-color-warning-surface);
+  border-color: var(--ds-color-warning-border);
+  color: var(--ds-color-warning-text);
+}
+
+.ds-alert--danger {
+  background: var(--ds-color-danger-surface);
+  border-color: var(--ds-color-danger-border);
+  color: var(--ds-color-danger-text);
+}

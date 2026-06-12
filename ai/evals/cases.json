@@ -1,0 +1,166 @@
+[
+  {
+    "id": "billing-custom-heading-download",
+    "prompt": "Generate a billing settings page for a B2B workspace using approved components. It should have a heading at the top saying 'my bills' and featuring a button to download all entries.",
+    "output": {
+      "title": "My Bills",
+      "summary": "Manage B2B workspace billing entries and download all invoice rows.",
+      "components": ["Alert", "Card", "Input", "Select", "Table", "Badge", "Button"],
+      "unsupported": [],
+      "screen": {
+        "alert": { "tone": "success", "title": "Billing ready", "body": "Billing entries are ready to review and download." },
+        "metrics": [
+          { "label": "Current plan", "value": "Growth" },
+          { "label": "Billing entries", "value": "3" }
+        ],
+        "fields": [
+          { "label": "Billing email", "kind": "input", "placeholder": "finance@example.com" },
+          { "label": "Plan", "kind": "select", "options": ["Starter", "Growth", "Enterprise"] }
+        ],
+        "table": {
+          "columns": ["Entry", "Date", "Status", "Amount"],
+          "rows": [
+            ["INV-1042", "May 01", { "text": "Paid", "tone": "success" }, "$240.00"],
+            ["INV-1038", "Apr 01", { "text": "Paid", "tone": "success" }, "$240.00"]
+          ]
+        },
+        "primaryAction": "Save billing",
+        "secondaryAction": "Download all entries"
+      }
+    },
+    "expect": {
+      "requiredComponents": ["Input", "Select", "Table", "Badge", "Button"],
+      "forbiddenComponents": ["Modal", "Chart"],
+      "requiresTokenEvidence": ["surface", "border", "spacing", "focus", "status"],
+      "requiresVisibleLabels": true,
+      "requiresStatusText": true,
+      "requiresTableStructure": true,
+      "requiresActionLabels": true,
+      "rejectsUnsupportedRendered": true,
+      "promptTerms": ["bills", "download", "entries"]
+    }
+  },
+  {
+    "id": "billing-settings",
+    "prompt": "Generate a billing settings page with invoice history and payment status.",
+    "output": {
+      "title": "Billing Settings",
+      "summary": "Manage invoices, payment status, and billing contact details.",
+      "components": ["Alert", "Card", "Input", "Select", "Table", "Badge", "Button"],
+      "unsupported": [],
+      "screen": {
+        "alert": { "tone": "success", "title": "Payment active", "body": "The payment method is ready for the next invoice." },
+        "metrics": [
+          { "label": "Current plan", "value": "Growth" },
+          { "label": "Open invoices", "value": "0" }
+        ],
+        "fields": [
+          { "label": "Billing email", "kind": "input", "placeholder": "finance@example.com" },
+          { "label": "Plan", "kind": "select", "options": ["Starter", "Growth", "Enterprise"] }
+        ],
+        "table": {
+          "columns": ["Invoice", "Date", "Status", "Amount"],
+          "rows": [
+            ["INV-1042", "May 01", { "text": "Paid", "tone": "success" }, "$240.00"],
+            ["INV-1038", "Apr 01", { "text": "Paid", "tone": "success" }, "$240.00"]
+          ]
+        },
+        "primaryAction": "Save billing",
+        "secondaryAction": "Export invoices"
+      }
+    },
+    "expect": {
+      "requiredComponents": ["Input", "Select", "Table", "Badge"],
+      "forbiddenComponents": ["Modal", "Chart"],
+      "requiresTokenEvidence": ["surface", "border", "spacing", "focus", "status"],
+      "requiresVisibleLabels": true,
+      "requiresStatusText": true,
+      "requiresTableStructure": true,
+      "requiresActionLabels": true,
+      "rejectsUnsupportedRendered": true,
+      "promptTerms": ["billing", "invoice", "payment"]
+    }
+  },
+  {
+    "id": "analytics-delete-action",
+    "prompt": "Build an analytics dashboard with table rows and delete functionality via action button.",
+    "output": {
+      "title": "Analytics Dashboard",
+      "summary": "Review adoption signals and delete queued rows from the analytics table.",
+      "components": ["Alert", "Card", "Select", "Table", "Badge", "Button"],
+      "unsupported": [],
+      "screen": {
+        "alert": { "tone": "neutral", "title": "Analytics ready", "body": "Table rows include explicit delete actions." },
+        "metrics": [
+          { "label": "Activation", "value": "68%", "progress": 68 },
+          { "label": "Weekly users", "value": "12.8k", "progress": 82 }
+        ],
+        "fields": [
+          { "label": "Segment", "kind": "select", "options": ["All users", "New admins", "Enterprise"] }
+        ],
+        "table": {
+          "columns": ["Segment", "Signal", "Action"],
+          "rows": [
+            ["New admins", { "text": "High intent", "tone": "success" }, { "action": "Delete", "variant": "secondary" }],
+            ["Dormant teams", { "text": "Usage down", "tone": "warning" }, { "action": "Delete", "variant": "secondary" }]
+          ]
+        },
+        "primaryAction": "Refresh analytics",
+        "secondaryAction": "Save dashboard"
+      }
+    },
+    "expect": {
+      "requiredComponents": ["Card", "Select", "Table", "Button"],
+      "forbiddenComponents": ["Modal"],
+      "requiresTokenEvidence": ["surface", "border", "spacing", "focus", "status"],
+      "requiresVisibleLabels": true,
+      "requiresStatusText": true,
+      "requiresTableStructure": true,
+      "requiresActionLabels": true,
+      "rejectsUnsupportedRendered": true,
+      "promptTerms": ["analytics", "dashboard", "delete"]
+    }
+  },
+  {
+    "id": "modal-gap",
+    "prompt": "Create a team management screen with invite modal.",
+    "output": {
+      "title": "Team Management",
+      "summary": "Manage team invites while flagging modal as a component gap.",
+      "components": ["Alert", "Input", "Select", "Table", "Badge", "Button"],
+      "unsupported": ["Modal"],
+      "screen": {
+        "alert": { "tone": "warning", "title": "Modal unavailable", "body": "Invite modal is not approved, so the flow uses visible fields and table fallbacks." },
+        "metrics": [
+          { "label": "Members", "value": "12" },
+          { "label": "Pending invites", "value": "3" }
+        ],
+        "fields": [
+          { "label": "Invite email", "kind": "input", "placeholder": "name@example.com" },
+          { "label": "Default role", "kind": "select", "options": ["Viewer", "Member", "Admin"] }
+        ],
+        "table": {
+          "columns": ["Name", "Role", "Status"],
+          "rows": [
+            ["Ari Lee", "Admin", { "text": "Active", "tone": "success" }],
+            ["Mina Patel", "Member", { "text": "Invited", "tone": "primary" }]
+          ]
+        },
+        "primaryAction": "Send invite",
+        "secondaryAction": "Request modal component"
+      }
+    },
+    "expect": {
+      "requiredComponents": ["Alert", "Input", "Table"],
+      "forbiddenComponents": ["Modal"],
+      "requiresUnsupportedFlag": ["Modal"],
+      "requiresTokenEvidence": ["border", "spacing", "focus", "status"],
+      "requiresVisibleLabels": true,
+      "requiresStatusText": true,
+      "requiresTableStructure": true,
+      "requiresActionLabels": true,
+      "rejectsUnsupportedRendered": true,
+      "promptTerms": ["team", "invite", "modal"]
+    }
+  }
+]

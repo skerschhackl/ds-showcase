@@ -1,0 +1,30 @@
+{
+  "name": "design-system-ai-showcase",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "system/*"
+  ],
+  "scripts": {
+    "dev": "npm --workspace @ds/showcase run dev",
+    "dev:composer": "npm --workspace @ds/composer run dev",
+    "dev:showcase": "npm --workspace @ds/showcase run dev",
+    "storybook": "npm --workspace @ds/storybook run dev",
+    "build:storybook": "npm --workspace @ds/storybook run build",
+    "prepare:contracts": "npm --workspace @ds/ai-contracts run build",
+    "build": "npm run prepare:contracts && npm --workspace @ds/composer run build && npm --workspace @ds/showcase run build && npm --workspace @ds/components run build && npm --workspace @ds/fonts run build && npm --workspace @ds/storybook run build && npm --workspace @ds/tokens run build",
+    "typecheck": "npm run prepare:contracts && npm --workspace @ds/composer run typecheck && npm --workspace @ds/showcase run typecheck && npm --workspace @ds/ai-contracts run typecheck && npm --workspace @ds/components run typecheck && npm --workspace @ds/fonts run typecheck && npm --workspace @ds/storybook run typecheck && npm --workspace @ds/tokens run typecheck",
+    "lint": "npm run prepare:contracts && npm --workspace @ds/composer run lint && npm --workspace @ds/showcase run lint && npm --workspace @ds/ai-contracts run lint && npm --workspace @ds/components run lint && npm --workspace @ds/fonts run lint && npm --workspace @ds/storybook run lint && npm --workspace @ds/tokens run lint",
+    "test": "npm run prepare:contracts && npm --workspace @ds/components run test && npm --workspace @ds/ai-contracts run test && npm --workspace @ds/composer run test && npm --workspace @ds/showcase run test && vitest run ai/evals/spec-integrity.test.mjs",
+    "eval": "npm run prepare:contracts && node ai/evals/run-evals.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.2",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.0",
+    "vitest": "^3.2.4"
+  }
+}

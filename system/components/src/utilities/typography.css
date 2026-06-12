@@ -1,0 +1,11 @@
+.ds-numeric {
+  font-variant-numeric: tabular-nums;
+}
+
+.ds-slashed-zero {
+  font-variant-numeric: slashed-zero;
+}
+
+.ds-technical-number {
+  font-variant-numeric: tabular-nums slashed-zero;
+}

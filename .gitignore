@@ -1,0 +1,9 @@
+node_modules
+dist
+apps/*/dist
+storybook-static
+.DS_Store
+.env
+.env.*
+!.env.example
+ai/skills/latest-code-safety.md

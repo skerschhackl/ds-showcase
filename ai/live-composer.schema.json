@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Alert",
+          "Badge",
+          "Button",
+          "Card",
+          "Input",
+          "Select",
+          "Table",
+          "Tabs",
+          "Textarea"
+        ]
+      }
+    },
+    "unsupported": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "screen": {
+      "type": "object",
+      "properties": {
+        "alert": {
+          "type": "object",
+          "properties": {
+            "tone": {
+              "type": "string",
+              "enum": [
+                "neutral",
+                "success",
+                "warning",
+                "danger"
+              ]
+            },
+            "title": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "tone",
+            "title",
+            "body"
+          ],
+          "additionalProperties": false
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              },
+              "progress": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "label",
+              "value"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "input",
+                  "select",
+                  "textarea"
+                ]
+              },
+              "placeholder": {
+                "type": "string"
+              },
+              "options": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "rows": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 12
+              }
+            },
+            "required": [
+              "label",
+              "kind"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "table": {
+          "type": "object",
+          "properties": {
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "rows": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "text": {
+                          "type": "string"
+                        },
+                        "tone": {
+                          "type": "string",
+                          "enum": [
+                            "neutral",
+                            "primary",
+                            "success",
+                            "warning",
+                            "danger"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "text",
+                        "tone"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "action": {
+                          "type": "string"
+                        },
+                        "variant": {
+                          "type": "string",
+                          "enum": [
+                            "primary",
+                            "secondary",
+                            "ghost"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "action"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "required": [
+            "columns",
+            "rows"
+          ],
+          "additionalProperties": false
+        },
+        "primaryAction": {
+          "type": "string"
+        },
+        "secondaryAction": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "alert",
+        "metrics",
+        "fields",
+        "table",
+        "primaryAction",
+        "secondaryAction"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "title",
+    "summary",
+    "components",
+    "unsupported",
+    "screen"
+  ],
+  "additionalProperties": false
+}

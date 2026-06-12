@@ -1,0 +1,14 @@
+{
+  "name": "@ds/fonts",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    "./styles.css": "./src/styles.css"
+  },
+  "scripts": {
+    "build": "node scripts/check-fonts.mjs",
+    "typecheck": "node scripts/check-fonts.mjs",
+    "lint": "node scripts/check-fonts.mjs"
+  }
+}

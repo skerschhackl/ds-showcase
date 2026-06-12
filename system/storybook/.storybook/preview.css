@@ -1,0 +1,21 @@
+html,
+body,
+#storybook-root,
+#storybook-docs,
+.sb-show-main,
+.docs-story,
+.sbdocs,
+.sbdocs-wrapper,
+.sbdocs-content {
+  font-family: var(--ds-typography-font-sans);
+  font-kerning: normal;
+  font-synthesis-style: none;
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
+}
+
+.sbdocs h1,
+.sbdocs h2,
+.sbdocs h3 {
+  font-family: var(--ds-typography-font-display);
+}
