@@ -39,6 +39,45 @@ describe("deterministic generated output", () => {
     expect(output.compliance.some((item) => item.label === "Prompt fidelity")).toBe(false);
   });
 
+  it("honors explicit role counts in team management prompts", () => {
+    const output = buildCustomOutput(
+      "Create a team management screen with 4 roles, invites, and access review and export functionality"
+    );
+    const defaultRoleField = output.screen.fields.find((field) => field.label === "Default role");
+
+    expect(output.screen.kind).toBe("team");
+    expect(defaultRoleField?.kind).toBe("select");
+    expect(defaultRoleField?.options).toEqual(["Viewer", "Member", "Admin", "Owner"]);
+    expect(output.screen.secondaryAction).toBe("Export");
+  });
+
+  it("honors explicit option and row counts across screen templates", () => {
+    const billing = buildCustomOutput("Create a billing page with 4 plans and 5 invoices");
+    const analytics = buildCustomOutput("Build an analytics dashboard with 5 segments and 4 metrics");
+    const onboarding = buildCustomOutput("Create an onboarding checklist with six tasks");
+    const recovery = buildCustomOutput("Generate a recovery screen with 4 checks and 4 retry policies");
+
+    expect(billing.screen.fields.find((field) => field.label === "Plan")?.options).toHaveLength(4);
+    expect(billing.screen.table.rows).toHaveLength(5);
+    expect(analytics.screen.fields.find((field) => field.label === "Segment")?.options).toHaveLength(5);
+    expect(analytics.screen.metrics).toHaveLength(4);
+    expect(onboarding.screen.table.rows).toHaveLength(6);
+    expect(recovery.screen.fields.find((field) => field.label === "Retry policy")?.options).toHaveLength(4);
+    expect(recovery.screen.table.rows).toHaveLength(4);
+  });
+
+  it("flags requested counts that are not rendered", () => {
+    const output = buildCustomOutput(
+      "Create a team management screen with 5 fields, roles, invites, and access review"
+    );
+
+    expect(output.compliance).toContainEqual({
+      label: "Prompt fidelity",
+      status: "Watch",
+      detail: "The prompt asked for 5 fields, but the generated screen rendered 2."
+    });
+  });
+
   it("flags table action requests that were not rendered in table cells", () => {
     const output = buildCustomOutput(
       "Create an onboarding checklist with setup tasks and an approve button per row."

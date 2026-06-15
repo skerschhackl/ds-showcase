@@ -14,6 +14,8 @@ import {
   getDefaultTabPanelId
 } from "@ds/components";
 import { ComponentsGallery } from "./features/components-gallery/ComponentsGallery";
+import { extractActionIntents } from "./features/generator/actionIntents";
+import { extractCountIntents } from "./features/generator/promptIntents";
 import {
   CustomGeneratedScreen,
   GeneratedScreenSkeleton,
@@ -188,6 +190,8 @@ function App() {
                       ["Configured mode", configuredComposerMode],
                       ["Rendered by", lastComposerMode],
                       ["Prompt", generatedOutput.fingerprint],
+                      ["Detected counts", promptCountSummary(generatedOutput.prompt)],
+                      ["Detected actions", promptActionSummary(generatedOutput.prompt)],
                       ["Components", (generatedOutput.approvedComponents ?? []).join(", ")],
                       ["Gaps", generatedOutput.unsupportedComponents?.length ? generatedOutput.unsupportedComponents.join(", ") : "None"]
                     ]}
@@ -220,6 +224,24 @@ function App() {
 
 function statusTone(status: ComplianceItem["status"]) {
   return status === "Pass" ? "success" : status === "Fail" ? "danger" : "warning";
+}
+
+function promptCountSummary(prompt: string) {
+  const counts = extractCountIntents(prompt);
+
+  return counts.length
+    ? counts.map((intent) => `${intent.label}=${intent.count}`).join(", ")
+    : "None";
+}
+
+function promptActionSummary(prompt: string) {
+  const actions = extractActionIntents(prompt);
+  const actionLabels = [
+    actions.pageAction ? `page=${actions.pageAction}` : "",
+    actions.rowAction ? `row=${actions.rowAction}` : ""
+  ].filter(Boolean);
+
+  return actionLabels.length ? actionLabels.join(", ") : "None";
 }
 
 function ComplianceReviewSkeleton() {

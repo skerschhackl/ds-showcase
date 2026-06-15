@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const source = readFileSync(new URL("./main.tsx", import.meta.url), "utf8");
+const generatorBehavior = readFileSync(new URL("./features/generator/README.md", import.meta.url), "utf8");
 
 describe("showcase ambient AI control usage", () => {
   it("keeps the ambient treatment scoped to the prompt textarea", () => {
@@ -21,6 +22,19 @@ describe("showcase ambient AI control usage", () => {
     expect(source).toContain("function ComplianceReviewSkeleton()");
     expect(source).toContain("isGenerating ? (");
     expect(source).toContain("<ComplianceReviewSkeleton />");
+  });
+
+  it("surfaces detected prompt intent in the generation evidence", () => {
+    expect(source).toContain("Detected counts");
+    expect(source).toContain("Detected actions");
+    expect(source).toContain("promptCountSummary(generatedOutput.prompt)");
+    expect(source).toContain("promptActionSummary(generatedOutput.prompt)");
+  });
+
+  it("documents tests versus evals for generator behavior", () => {
+    expect(generatorBehavior).toContain("deterministic demo");
+    expect(generatorBehavior).toContain("Keep broad generation quality checks in evals.");
+    expect(generatorBehavior).toContain("Keep exact local generator behavior in unit tests.");
   });
 
   it("shows composer mode as a compact prompt-card pill instead of a status panel", () => {

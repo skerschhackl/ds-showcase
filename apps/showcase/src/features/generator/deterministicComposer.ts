@@ -3,6 +3,7 @@ import type { ComplianceItem, GeneratedOutput } from "../../showcaseTypes";
 import { extractActionIntents } from "./actionIntents";
 import { titleFromPrompt } from "./promptParsing";
 import { buildPromptFidelityChecks } from "./promptFidelity";
+import { getCountIntent, type CountIntentKey } from "./promptIntents";
 
 export function buildCustomOutput(prompt: string): GeneratedOutput {
   const cleanPrompt = prompt.trim() || "Create a product workflow screen";
@@ -129,6 +130,22 @@ function buildGeneratedScreen(prompt: string, title: string, unsupportedComponen
   }
 
   if (kind === "billing") {
+    const planOptions = optionsForRequestedCount(
+      prompt,
+      ["plan"],
+      ["Starter", "Growth", "Enterprise", "Scale", "Business", "Custom"]
+    );
+    const invoiceRows = rowsForRequestedCount(
+      prompt,
+      ["invoice", "row"],
+      [
+        ["INV-1042", "May 01", { text: "Paid", tone: "success" }, "$240.00"],
+        ["INV-1038", "Apr 01", { text: "Paid", tone: "success" }, "$240.00"],
+        ["INV-1031", "Mar 01", { text: "Archived", tone: "neutral" }, "$180.00"]
+      ],
+      (index) => [`INV-${1031 - index}`, "Feb 01", { text: "Paid", tone: "success" }, "$240.00"]
+    );
+
     return {
       kind,
       alert: { tone: "success", title: "Billing workspace ready", body: "Plan, payment, and invoice controls were generated from the prompt." },
@@ -139,15 +156,11 @@ function buildGeneratedScreen(prompt: string, title: string, unsupportedComponen
       ],
       fields: [
         { label: "Billing email", kind: "input", placeholder: "finance@example.com" },
-        { label: "Plan", kind: "select", options: ["Starter", "Growth", "Enterprise"] }
+        { label: "Plan", kind: "select", options: planOptions }
       ],
       table: {
         columns: ["Invoice", "Date", "Status", "Amount"],
-        rows: [
-          ["INV-1042", "May 01", { text: "Paid", tone: "success" }, "$240.00"],
-          ["INV-1038", "Apr 01", { text: "Paid", tone: "success" }, "$240.00"],
-          ["INV-1031", "Mar 01", { text: "Archived", tone: "neutral" }, "$180.00"]
-        ]
+        rows: invoiceRows
       },
       primaryAction: "Save billing",
       secondaryAction: actionIntents.pageAction ?? "Export invoices"
@@ -157,11 +170,21 @@ function buildGeneratedScreen(prompt: string, title: string, unsupportedComponen
   if (kind === "team") {
     const rowAction = actionIntents.rowAction;
     const columns = rowAction ? ["Name", "Role", "Status", "Actions"] : ["Name", "Role", "Status"];
-    const rows: Array<Array<TableCell>> = [
-      ["Ari Lee", "Admin", { text: "Active", tone: "success" }],
-      ["Mina Patel", "Member", { text: "Invited", tone: "primary" }],
-      ["Noah Kim", "Viewer", { text: "Review", tone: "warning" }]
-    ];
+    const roleOptions = optionsForRequestedCount(
+      prompt,
+      ["role"],
+      ["Viewer", "Member", "Admin", "Owner", "Billing admin", "Security admin"]
+    );
+    const rows = rowsForRequestedCount(
+      prompt,
+      ["member", "row"],
+      [
+        ["Ari Lee", "Admin", { text: "Active", tone: "success" }],
+        ["Mina Patel", "Member", { text: "Invited", tone: "primary" }],
+        ["Noah Kim", "Viewer", { text: "Review", tone: "warning" }]
+      ],
+      (index) => [`Team member ${index + 1}`, roleOptions[index % roleOptions.length], { text: "Active", tone: "success" }]
+    );
 
     if (rowAction) {
       rows.forEach((row) => row.push({ action: rowAction, variant: "secondary" }));
@@ -177,7 +200,7 @@ function buildGeneratedScreen(prompt: string, title: string, unsupportedComponen
       ],
       fields: [
         { label: "Invite by email", kind: "input", placeholder: "name@example.com" },
-        { label: "Default role", kind: "select", options: ["Viewer", "Member", "Admin"] }
+        { label: "Default role", kind: "select", options: roleOptions }
       ],
       table: {
         columns,
@@ -191,11 +214,22 @@ function buildGeneratedScreen(prompt: string, title: string, unsupportedComponen
   if (kind === "analytics") {
     const rowAction = actionIntents.rowAction;
     const columns = rowAction ? ["Segment", "Signal", "Action", "Actions"] : ["Segment", "Signal", "Action"];
-    const rows: Array<Array<TableCell>> = [
-      ["New admins", { text: "High intent", tone: "success" }, "Show checklist"],
-      ["Dormant teams", { text: "Usage down", tone: "warning" }, "Trigger recovery"],
-      ["Enterprise", { text: "Expansion", tone: "primary" }, "Route to account team"]
-    ];
+    const metricCount = requestedCount(prompt, ["metric"], 3, 6);
+    const segmentOptions = optionsForRequestedCount(
+      prompt,
+      ["segment"],
+      ["All users", "New admins", "Enterprise", "Dormant teams", "Trials", "Expansion accounts"]
+    );
+    const rows = rowsForRequestedCount(
+      prompt,
+      ["segment", "row"],
+      [
+        ["New admins", { text: "High intent", tone: "success" }, "Show checklist"],
+        ["Dormant teams", { text: "Usage down", tone: "warning" }, "Trigger recovery"],
+        ["Enterprise", { text: "Expansion", tone: "primary" }, "Route to account team"]
+      ],
+      (index) => [segmentOptions[index % segmentOptions.length], { text: "Review", tone: "warning" }, "Prioritize follow-up"]
+    );
 
     if (rowAction) {
       rows.forEach((row) => row.push({ action: rowAction, variant: "secondary" }));
@@ -207,10 +241,13 @@ function buildGeneratedScreen(prompt: string, title: string, unsupportedComponen
       metrics: [
         { label: "Activation", value: "68%", progress: 68 },
         { label: "Weekly users", value: "12.8k", progress: 82 },
-        { label: "Adoption", value: "41%", progress: 41 }
-      ],
+        { label: "Adoption", value: "41%", progress: 41 },
+        { label: "Retention", value: "57%", progress: 57 },
+        { label: "Expansion", value: "24%", progress: 24 },
+        { label: "Risk", value: "12%", progress: 12 }
+      ].slice(0, metricCount),
       fields: [
-        { label: "Segment", kind: "select", options: ["All users", "New admins", "Enterprise"] },
+        { label: "Segment", kind: "select", options: segmentOptions },
         { label: "Time range", kind: "select", options: ["7 days", "30 days", "90 days"] }
       ],
       table: {
@@ -223,6 +260,22 @@ function buildGeneratedScreen(prompt: string, title: string, unsupportedComponen
   }
 
   if (kind === "onboarding") {
+    const ownerOptions = optionsForRequestedCount(
+      prompt,
+      ["owner"],
+      ["Admin", "Ops lead", "Product lead", "Customer success", "Implementation lead", "Security lead"]
+    );
+    const taskRows = rowsForRequestedCount(
+      prompt,
+      ["task", "row"],
+      [
+        ["Connect data source", { text: "Done", tone: "success" }, "Admin"],
+        ["Invite teammates", { text: "Next", tone: "primary" }, "Ops lead"],
+        ["Publish dashboard", { text: "Queued", tone: "neutral" }, "Product lead"]
+      ],
+      (index) => [`Setup task ${index + 1}`, { text: "Queued", tone: "neutral" }, ownerOptions[index % ownerOptions.length]]
+    );
+
     return {
       kind,
       alert: { tone: "neutral", title: "Checklist generated", body: "The prompt was converted into setup tasks and next actions." },
@@ -233,15 +286,11 @@ function buildGeneratedScreen(prompt: string, title: string, unsupportedComponen
       ],
       fields: [
         { label: "Workspace name", kind: "input", placeholder: "Acme workspace" },
-        { label: "Setup owner", kind: "select", options: ["Admin", "Ops lead", "Product lead"] }
+        { label: "Setup owner", kind: "select", options: ownerOptions }
       ],
       table: {
         columns: ["Task", "Status", "Owner"],
-        rows: [
-          ["Connect data source", { text: "Done", tone: "success" }, "Admin"],
-          ["Invite teammates", { text: "Next", tone: "primary" }, "Ops lead"],
-          ["Publish dashboard", { text: "Queued", tone: "neutral" }, "Product lead"]
-        ]
+        rows: taskRows
       },
       primaryAction: "Start next task",
       secondaryAction: "Skip for now"
@@ -249,6 +298,22 @@ function buildGeneratedScreen(prompt: string, title: string, unsupportedComponen
   }
 
   if (kind === "recovery") {
+    const retryPolicyOptions = optionsForRequestedCount(
+      prompt,
+      ["retryPolicy"],
+      ["Manual", "Automatic", "Escalate", "Backoff", "Notify owner", "Pause sync"]
+    );
+    const checkRows = rowsForRequestedCount(
+      prompt,
+      ["check", "row"],
+      [
+        ["Credentials", { text: "Valid", tone: "success" }, "No action needed"],
+        ["Warehouse", { text: "Timeout", tone: "danger" }, "Retry connection"],
+        ["Schema", { text: "Review", tone: "warning" }, "Compare changed tables"]
+      ],
+      (index) => [`Recovery check ${index + 1}`, { text: "Review", tone: "warning" }, "Confirm next step"]
+    );
+
     return {
       kind,
       alert: { tone: "danger", title: "Recovery flow generated", body: "The prompt was converted into a status-first troubleshooting flow." },
@@ -259,15 +324,11 @@ function buildGeneratedScreen(prompt: string, title: string, unsupportedComponen
       ],
       fields: [
         { label: "Incident owner", kind: "input", placeholder: "ops@example.com" },
-        { label: "Retry policy", kind: "select", options: ["Manual", "Automatic", "Escalate"] }
+        { label: "Retry policy", kind: "select", options: retryPolicyOptions }
       ],
       table: {
         columns: ["Check", "Result", "Next step"],
-        rows: [
-          ["Credentials", { text: "Valid", tone: "success" }, "No action needed"],
-          ["Warehouse", { text: "Timeout", tone: "danger" }, "Retry connection"],
-          ["Schema", { text: "Review", tone: "warning" }, "Compare changed tables"]
-        ]
+        rows: checkRows
       },
       primaryAction: "Retry sync",
       secondaryAction: "Open run log"
@@ -275,6 +336,17 @@ function buildGeneratedScreen(prompt: string, title: string, unsupportedComponen
   }
 
   if (kind === "empty") {
+    const itemRows = rowsForRequestedCount(
+      prompt,
+      ["item", "row"],
+      [
+        ["Create first item", { text: "Primary", tone: "primary" }, "Start the workflow"],
+        ["Choose template", { text: "Optional", tone: "neutral" }, "Speed up setup"],
+        ["Share with team", { text: "Later", tone: "neutral" }, "Collaborate when ready"]
+      ],
+      (index) => [`Empty state step ${index + 1}`, { text: "Optional", tone: "neutral" }, "Prepare the workspace"]
+    );
+
     return {
       kind,
       alert: { tone: "neutral", title: "Empty state generated", body: "The prompt was converted into a first-action workflow." },
@@ -289,16 +361,23 @@ function buildGeneratedScreen(prompt: string, title: string, unsupportedComponen
       ],
       table: {
         columns: ["Step", "Status", "Purpose"],
-        rows: [
-          ["Create first item", { text: "Primary", tone: "primary" }, "Start the workflow"],
-          ["Choose template", { text: "Optional", tone: "neutral" }, "Speed up setup"],
-          ["Share with team", { text: "Later", tone: "neutral" }, "Collaborate when ready"]
-        ]
+        rows: itemRows
       },
       primaryAction: "Create first item",
       secondaryAction: "Browse templates"
     };
   }
+
+  const workflowRows = rowsForRequestedCount(
+    prompt,
+    ["item", "row"],
+    [
+      [`${title} intake`, { text: "Draft", tone: "primary" }, "Validate details"],
+      [`${title} review`, { text: "Review", tone: "warning" }, "Confirm ownership"],
+      [`${title} handoff`, { text: "Ready", tone: "success" }, "Route to next step"]
+    ],
+    (index) => [`${title} item ${index + 1}`, { text: "Draft", tone: "primary" }, "Validate details"]
+  );
 
   return {
     kind,
@@ -314,11 +393,7 @@ function buildGeneratedScreen(prompt: string, title: string, unsupportedComponen
     ],
     table: {
       columns: ["Item", "Status", "Next step"],
-      rows: [
-        [`${title} intake`, { text: "Draft", tone: "primary" }, "Validate details"],
-        [`${title} review`, { text: "Review", tone: "warning" }, "Confirm ownership"],
-        [`${title} handoff`, { text: "Ready", tone: "success" }, "Route to next step"]
-      ]
+      rows: workflowRows
     },
     primaryAction: "Continue",
     secondaryAction: "Review assumptions"
@@ -328,4 +403,32 @@ function buildGeneratedScreen(prompt: string, title: string, unsupportedComponen
 function promptFingerprint(prompt: string) {
   const hash = Array.from(prompt).reduce((total, char) => (total * 31 + char.charCodeAt(0)) % 9973, 17);
   return `prompt-${hash.toString().padStart(4, "0")}`;
+}
+
+function optionsForRequestedCount(prompt: string, keys: CountIntentKey[], options: string[]) {
+  return options.slice(0, requestedCount(prompt, keys, 3, options.length));
+}
+
+function rowsForRequestedCount(
+  prompt: string,
+  keys: CountIntentKey[],
+  baseRows: Array<Array<TableCell>>,
+  buildRow: (index: number) => Array<TableCell>
+) {
+  const count = requestedCount(prompt, keys, baseRows.length, 8);
+  const rows = baseRows.slice(0, count);
+
+  while (rows.length < count) {
+    rows.push(buildRow(rows.length));
+  }
+
+  return rows;
+}
+
+function requestedCount(prompt: string, keys: CountIntentKey[], fallback: number, max: number) {
+  const requested = keys
+    .map((key) => getCountIntent(prompt, key))
+    .find((count): count is number => typeof count === "number");
+
+  return Math.min(requested ?? fallback, max);
 }
