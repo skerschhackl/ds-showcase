@@ -13,7 +13,7 @@ import {
   getDefaultTabId,
   getDefaultTabPanelId
 } from "@ds/components";
-import { ComponentsGallery } from "./ComponentsGallery";
+import { ComponentsGallery } from "./features/components-gallery/ComponentsGallery";
 import {
   CustomGeneratedScreen,
   GeneratedScreenSkeleton,
@@ -112,48 +112,47 @@ function App() {
               <Sparkles aria-hidden="true" size={20} />
               <div>
                 <h2>Prompt to UI</h2>
-                <p>Examples only seed the prompt. Generate always uses the current prompt text.</p>
+                <p>Describe a product screen, then generate a governed UI from approved components.</p>
               </div>
               <Badge className="composer-mode-pill" tone="neutral">
                 {isGenerating ? `Generating with ${configuredComposerMode.toLowerCase()}` : configuredComposerMode}
               </Badge>
             </div>
 
-            <Tabs
-              ariaLabel="Prompt examples"
-              active={selectedId}
-              idPrefix="prompt-examples"
-              onChange={selectScenario}
-              tabs={scenarios.map((scenario) => ({ id: scenario.id, label: scenario.label }))}
+            <section className="prompt-examples" aria-labelledby="prompt-examples-title">
+              <span id="prompt-examples-title" className="prompt-examples__label">Prompt starters</span>
+              <div className="prompt-example-chips" role="group" aria-labelledby="prompt-examples-title">
+                {scenarios.map((scenario) => (
+                  <button
+                    key={scenario.id}
+                    className="prompt-example-chip"
+                    type="button"
+                    onClick={() => selectScenario(scenario.id)}
+                  >
+                    {scenario.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <Textarea
+              className="prompt-input-field"
+              label="Prompt"
+              controlFrameClassName="ds-ai-control-frame"
+              controlClassName="ds-ai-control"
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              rows={5}
             />
 
-            {scenarios.map((scenario) => (
-              <TabPanel
-                key={scenario.id}
-                id={getDefaultTabPanelId("prompt-examples", scenario.id)}
-                active={selectedId === scenario.id}
-                labelledBy={getDefaultTabId("prompt-examples", scenario.id)}
-              >
-                <Textarea
-                  label="Prompt"
-                  controlFrameClassName="ds-ai-control-frame"
-                  controlClassName="ds-ai-control"
-                  value={input}
-                  onChange={(event) => setInput(event.target.value)}
-                  rows={5}
-                  hint="Edit the current prompt, then generate again to update the screen."
-                />
-              </TabPanel>
-            ))}
-
             <div className="button-row">
-              <Button onClick={generate} loading={isGenerating} loadingLabel="Generating UI">
-                {!isGenerating ? <Play size={16} aria-hidden="true" /> : null}
-                {isGenerating ? "Generating" : "Generate UI"}
-              </Button>
               <Button variant="secondary" onClick={() => setInput(selectedScenario.prompt)}>
                 <RotateCcw size={16} aria-hidden="true" />
                 Reset
+              </Button>
+              <Button className="generate-button" onClick={generate} loading={isGenerating} loadingLabel="Generating UI">
+                {!isGenerating ? <Play size={16} aria-hidden="true" /> : null}
+                {isGenerating ? "Generating" : "Generate UI"}
               </Button>
             </div>
           </Card>

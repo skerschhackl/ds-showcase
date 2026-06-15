@@ -16,7 +16,7 @@ import {
   getDefaultTabPanelId
 } from "@ds/components";
 import tokens from "@ds/tokens";
-import type { GovernanceMeta, SemanticColor } from "./showcaseTypes";
+import type { GovernanceMeta, SemanticColor } from "../../showcaseTypes";
 
 const primitiveFamilies = Object.keys(tokens.color.primitive) as Array<keyof typeof tokens.color.primitive>;
 const statusSwatches: SemanticColor[] = [

@@ -13,7 +13,8 @@ Use `Button` for explicit commands that change state, submit data, trigger gener
 ## AI Rules
 
 - Use one primary button per local action group.
-- Use `secondary` for alternate but still important actions; it should keep a visible tinted fill and border so it reads as actionable on glass or pale surfaces.
+- Use `primary` as the clearest commitment action; it should remain solid and may use only a restrained glossy highlight.
+- Use `secondary` for alternate but still important actions; it should use a quiet glass control treatment with visible tint and border on glass or pale surfaces.
 - Use `ghost` for low-emphasis navigation or inspection actions.
 - Use `loading` for pending action states; the button is disabled while loading.
 - Loading buttons need action-specific `loadingLabel` text, such as `Generating UI`, `Saving invoice`, or `Retrying sync`.

@@ -122,6 +122,48 @@
     }
   },
   {
+    "id": "team-row-and-page-actions",
+    "prompt": "Create a team management screen with roles, invites, and access review and a download button per member, also include a button that export all data shown.",
+    "output": {
+      "title": "Team Management",
+      "summary": "Manage team roles, invites, access review, member downloads, and exported team data.",
+      "components": ["Alert", "Card", "Input", "Select", "Table", "Badge", "Button"],
+      "unsupported": [],
+      "screen": {
+        "alert": { "tone": "neutral", "title": "Access review ready", "body": "Team members include role status, invite state, and row-level download actions." },
+        "metrics": [
+          { "label": "Members", "value": "12" },
+          { "label": "Pending invites", "value": "3" },
+          { "label": "Access reviews", "value": "2" }
+        ],
+        "fields": [
+          { "label": "Invite by email", "kind": "input", "placeholder": "name@example.com" },
+          { "label": "Default role", "kind": "select", "options": ["Viewer", "Member", "Admin"] }
+        ],
+        "table": {
+          "columns": ["Name", "Role", "Status", "Actions"],
+          "rows": [
+            ["Ari Lee", "Admin", { "text": "Active", "tone": "success" }, { "action": "Download", "variant": "secondary" }],
+            ["Mina Patel", "Member", { "text": "Invited", "tone": "primary" }, { "action": "Download", "variant": "secondary" }]
+          ]
+        },
+        "primaryAction": "Send invite",
+        "secondaryAction": "Export all data shown"
+      }
+    },
+    "expect": {
+      "requiredComponents": ["Input", "Select", "Table", "Badge", "Button"],
+      "forbiddenComponents": ["Modal", "Chart"],
+      "requiresTokenEvidence": ["surface", "border", "spacing", "focus", "status"],
+      "requiresVisibleLabels": true,
+      "requiresStatusText": true,
+      "requiresTableStructure": true,
+      "requiresActionLabels": true,
+      "rejectsUnsupportedRendered": true,
+      "promptTerms": ["team", "roles", "invites", "access", "download", "export", "data", "shown"]
+    }
+  },
+  {
     "id": "modal-gap",
     "prompt": "Create a team management screen with invite modal.",
     "output": {

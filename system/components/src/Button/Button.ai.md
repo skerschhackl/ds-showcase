@@ -13,7 +13,8 @@ Use `Button` for explicit commands that change state, submit data, trigger gener
 ## Rules
 
 - Use one primary button per local action group.
-- Use `secondary` for alternate but still important actions; it has a visible tinted fill and border.
+- Use `primary` as a solid commitment action; avoid making it transparent.
+- Use `secondary` for alternate but still important actions; it has a quiet glass fill with visible tint and border.
 - Use `ghost` for low-emphasis navigation or inspection actions.
 - Do not use Button for status, tags, or decorative labels.
 - When `loading` is true, provide an action-specific `loadingLabel`, such as `Generating UI`, `Saving invoice`, or `Retrying sync`.

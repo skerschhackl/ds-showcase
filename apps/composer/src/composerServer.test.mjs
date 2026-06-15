@@ -166,8 +166,10 @@ describe("composer server boundary", () => {
     expect(response.status).toBe(200);
     expect(providerBody.input[0].content).toContain("set the top-level title to that exact heading text");
     expect(providerBody.input[0].content).toContain("download all entries");
+    expect(providerBody.input[0].content).toContain("export all data shown");
     expect(providerBody.input[0].content).toContain('The only valid table action-cell object shape is { "action": "Label", "variant": "secondary" }');
     expect(providerBody.input[0].content).toContain("do not emit JSX-like Button objects");
+    expect(providerBody.input[0].content).not.toContain("Button object in the relevant table row");
     expect(providerBody.input[1].content).toContain("my bills");
   });
 

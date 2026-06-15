@@ -16,6 +16,7 @@ Use `Badge` for short text status, category, or state labels.
 - Status text must be self-contained and contrast-safe for small text.
 - Do not use badge tone as the only status signal.
 - Use `neutral` for non-evaluative metadata such as mode, category, or source labels. Reserve `success` for explicit successful outcomes.
+- AI-flavored badges should use explicit text such as `AI-assisted`, `Live composer`, or `Generated`; do not rely on color or decorative treatment alone.
 
 ## Related Contract
 

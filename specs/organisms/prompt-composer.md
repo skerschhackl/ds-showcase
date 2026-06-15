@@ -5,7 +5,7 @@ The prompt composer collects user intent and triggers UI generation.
 ## Required Structure
 
 - Prompt textarea.
-- Example prompt tabs.
+- Example prompt chips.
 - Primary `Generate UI` button.
 - Secondary reset action.
 - Generation status text.
@@ -14,7 +14,7 @@ The prompt composer collects user intent and triggers UI generation.
 ## AI Rules
 
 - The current textarea value is the source for generation.
-- Example tabs should seed the prompt; they must not override the user prompt after editing unless selected by the user.
+- Example chips should seed the prompt; they must not override the user prompt after editing unless selected by the user.
 - The generate button must disable and show loading while generation is running.
 - Loading should replace the button icon with a spinner.
 - The generated preview should show a skeleton while generation is running.
