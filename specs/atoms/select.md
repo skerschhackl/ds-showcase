@@ -19,6 +19,7 @@ Use `Select` for choosing one option from a small finite set.
 - Keep option labels short and scannable.
 - Placeholder or first-option text cannot replace the label or carry required instructions.
 - Hints and errors are programmatically connected by the component; prefer `hint` and `error` props over custom markup.
+- Error state must include the approved danger-border treatment; do not show error copy while leaving the select edge neutral.
 
 ## Related Contract
 

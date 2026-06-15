@@ -1,4 +1,3 @@
-import type { BadgeProps } from "@ds/components";
 import type { GeneratedScreen, KnownScreenKind } from "./liveComposer";
 
 export type ScenarioId = KnownScreenKind;
@@ -30,8 +29,3 @@ export type AppView = "generator" | "components";
 export type SemanticColor = { label: string; token: string; value: string };
 export type HeroSignalItem = { label: string; detail: string; active?: boolean };
 export type HeroContent = { badge: string; title: string; body: string; signalLabel: string; signal: HeroSignalItem[] };
-export type GovernanceMeta = {
-  label: string;
-  value: string;
-  tone?: BadgeProps["tone"];
-};

@@ -8,8 +8,7 @@
 .palette-overview p,
 .component-example h3,
 .component-example p,
-.component-note,
-.component-meta {
+.component-note {
   margin: 0;
 }
 
@@ -21,15 +20,10 @@
 }
 
 .palette-overview {
+  border-radius: var(--ds-radius-xl);
   gap: var(--ds-space-5);
+  overflow: hidden;
   padding: var(--ds-space-5);
-}
-
-.palette-overview__header {
-  align-items: start;
-  display: flex;
-  gap: var(--ds-space-4);
-  justify-content: space-between;
 }
 
 .palette-overview h3 {
@@ -57,8 +51,7 @@
   gap: var(--ds-space-1);
 }
 
-.palette-family__label span,
-.semantic-swatch span {
+.palette-family__label span {
   color: var(--ds-color-muted);
   font-size: 0.75rem;
   font-weight: 800;
@@ -92,69 +85,156 @@
   padding: 0.2rem;
 }
 
-.semantic-palette-grid {
+.semantic-token-grid {
   display: grid;
   gap: var(--ds-space-4);
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1fr;
 }
 
-.semantic-swatch-group {
+.semantic-token-card {
   background: rgba(255, 255, 255, 0.58);
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(220, 232, 238, 0.72);
   border-radius: var(--ds-radius-lg);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   display: grid;
   gap: var(--ds-space-3);
+  min-width: 0;
   padding: var(--ds-space-4);
 }
 
-.semantic-swatch-group h4 {
+.semantic-token-card > div:first-child {
+  max-width: 44rem;
+}
+
+.semantic-token-card--base,
+.semantic-token-card--status {
+  grid-column: 1 / -1;
+}
+
+.semantic-token-card h4,
+.token-evidence h5 {
   font-size: 0.95rem;
   letter-spacing: 0;
 }
 
-.semantic-swatch-list {
+.semantic-token-card h5 {
+  margin: 0;
+}
+
+.semantic-base-columns {
   display: grid;
-  gap: var(--ds-space-2);
+  gap: var(--ds-space-4);
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.semantic-swatch {
+.semantic-status-groups {
+  display: grid;
+  gap: var(--ds-space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.semantic-status-group {
+  display: grid;
+  gap: var(--ds-space-3);
+  min-width: 0;
+  padding-block: var(--ds-space-1);
+}
+
+.semantic-status-sample {
   align-items: center;
+  border: 1px solid;
+  border-radius: var(--ds-radius-pill);
+  display: inline-flex;
+  gap: var(--ds-space-2);
+  justify-self: start;
+  min-height: 2rem;
+  padding: 0.4rem var(--ds-space-3);
+  white-space: nowrap;
+}
+
+.semantic-status-sample__icon {
+  border-radius: var(--ds-radius-pill);
+  display: block;
+  height: 0.75rem;
+  width: 0.75rem;
+}
+
+.semantic-status-sample > span:last-child {
+  border-radius: var(--ds-radius-pill);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0.15rem var(--ds-space-2);
+}
+
+.token-evidence {
   display: grid;
   gap: var(--ds-space-2);
-  grid-template-columns: 2rem minmax(0, 1fr);
   min-width: 0;
 }
 
-.semantic-swatch__chip {
-  border: 0;
-  border-radius: var(--ds-radius-md);
-  display: block;
-  height: 2rem;
-  width: 2rem;
+.token-evidence__rows {
+  display: grid;
+  gap: var(--ds-space-1);
 }
 
-.semantic-swatch strong,
-.semantic-swatch span {
-  display: block;
-  overflow-wrap: anywhere;
+.token-evidence__row {
+  align-items: center;
+  column-gap: var(--ds-space-2);
+  display: grid;
+  grid-template-columns: 1rem minmax(7rem, 0.7fr) minmax(12rem, 1fr) minmax(7rem, 0.8fr);
+  min-width: 0;
 }
 
-.semantic-swatch span {
-  font-variant-numeric: tabular-nums;
+.token-evidence--compact .token-evidence__row {
+  grid-template-columns: 1rem minmax(5rem, 0.55fr) minmax(12rem, 1fr) minmax(6rem, 0.7fr);
+}
+
+.token-evidence__swatch {
+  border: 1px solid rgba(21, 31, 36, 0.08);
+  border-radius: var(--ds-radius-pill);
+  display: block;
+  height: 1rem;
+  width: 1rem;
+}
+
+.token-evidence__row strong,
+.token-evidence__row code,
+.token-evidence__row span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.token-evidence__row code {
+  color: var(--ds-color-muted);
+  font-family: var(--ds-typography-font-mono);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.token-evidence__row span:last-child {
+  color: var(--ds-color-muted);
+  font-size: 0.75rem;
+  font-weight: 400;
 }
 
 .component-grid {
   display: grid;
   gap: var(--ds-space-6);
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   scroll-margin-top: var(--ds-space-6);
 }
 
 .component-example {
   align-content: start;
   gap: var(--ds-space-5);
+  min-width: 0;
+}
+
+.component-example--full {
+  grid-column: 1 / -1;
 }
 
 .component-example__header {
@@ -169,36 +249,6 @@
   font-size: 1.5rem;
   font-weight: 800;
   letter-spacing: 0;
-}
-
-.component-meta {
-  display: flex;
-  flex: 0 0 auto;
-  flex-wrap: wrap;
-  gap: var(--ds-space-2);
-  justify-content: flex-end;
-}
-
-.component-meta div {
-  align-items: center;
-  background: rgba(238, 244, 248, 0.74);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: var(--ds-radius-pill);
-  display: inline-flex;
-  gap: var(--ds-space-2);
-  padding: 0.25rem;
-}
-
-.component-meta dt {
-  color: var(--ds-color-muted);
-  font-size: 0.7rem;
-  font-weight: 800;
-  padding-left: var(--ds-space-2);
-  text-transform: uppercase;
-}
-
-.component-meta dd {
-  margin: 0;
 }
 
 .component-example__demo {
@@ -258,36 +308,44 @@
   font-size: 0.875rem;
 }
 
-#component-tokens,
-#component-gaps {
+#component-tokens {
   scroll-margin-top: var(--ds-space-6);
 }
 
 @media (max-width: 780px) {
   .component-grid,
-  .semantic-palette-grid,
-  .semantic-swatch-list {
+  .semantic-token-grid,
+  .semantic-status-groups {
     grid-template-columns: 1fr;
+  }
+
+  .component-example--full {
+    grid-column: auto;
+  }
+
+  .token-evidence__row,
+  .token-evidence--compact .token-evidence__row {
+    grid-template-columns: 1rem minmax(0, 1fr);
+  }
+
+  .token-evidence__row code,
+  .token-evidence__row span:last-child {
+    grid-column: 2;
   }
 
   .component-example__header {
     display: grid;
   }
 
-  .component-meta {
-    justify-content: start;
-  }
-
-  .palette-overview__header,
   .palette-family {
     grid-template-columns: 1fr;
   }
 
-  .palette-overview__header {
-    display: grid;
-  }
-
   .palette-ramp {
     grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .semantic-base-columns {
+    grid-template-columns: 1fr;
   }
 }

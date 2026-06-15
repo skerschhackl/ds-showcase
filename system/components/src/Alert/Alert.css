@@ -1,5 +1,5 @@
 .ds-alert {
-  border: 1px solid var(--ds-color-border-semantic-subtle);
+  border: 1px solid var(--ds-color-border-subtle);
   border-radius: var(--ds-radius-md);
   display: grid;
   gap: var(--ds-space-1);

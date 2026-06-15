@@ -16,6 +16,7 @@ Use `Textarea` for long-form text entry with a visible label, such as prompts, n
 - Use `hint` only when the field needs meaningful extra guidance.
 - Use `error` only for specific, actionable validation feedback.
 - Hints and errors are programmatically connected by the component; prefer `hint` and `error` props over custom markup.
+- When `error` is present, the visible error state includes both the error copy and the approved danger-border treatment.
 - Use `Textarea` for multi-line input only. Use `Input` for single-line values.
 
 ## AI Generation Notes

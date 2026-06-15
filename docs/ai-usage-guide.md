@@ -31,6 +31,8 @@ Start with `specs/README.md` when asking an AI agent to use the design system. T
 
 Generated UI is not accepted because it looks plausible. It is accepted when it follows the component model, token system, accessibility requirements, and compliance workflow.
 
+For generated form fields, validation states must be visible and programmatic: use component `error` props so `aria-invalid` is set, error copy is connected, and the control uses the approved danger-border treatment.
+
 ## Eval And Composer Testing Notes
 
 AI evals should inspect structured screen plans, not only declarations about those plans. A passing eval should demonstrate that approved components were chosen, unsupported components were handled as gaps, visible labels and status text are present, action labels are explicit, token evidence can be inferred from rendered primitives, and prompt-specific terms survived into the generated UI plan.

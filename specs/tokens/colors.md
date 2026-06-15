@@ -59,15 +59,15 @@ Use semantic color tokens for product UI. Primitive tokens define the palette an
 - `--ds-color-bg-surface-raised`: raised surfaces
 - `--ds-color-bg-subtle`: subdued section backgrounds
 - `--ds-color-bg-inverse`: inverse background
-- `--ds-color-text-semantic-primary`: primary text
-- `--ds-color-text-semantic-secondary`: supporting text
-- `--ds-color-text-semantic-tertiary`: low-emphasis text
-- `--ds-color-text-semantic-disabled`: disabled text
-- `--ds-color-text-semantic-inverse`: text on inverse/action backgrounds
-- `--ds-color-border-semantic-subtle`: low-emphasis borders
-- `--ds-color-border-semantic-default`: default borders
-- `--ds-color-border-semantic-strong`: emphasized borders
-- `--ds-color-border-semantic-focus`: focus borders
+- `--ds-color-text-primary`: primary text
+- `--ds-color-text-secondary`: supporting text
+- `--ds-color-text-tertiary`: low-emphasis text
+- `--ds-color-text-disabled`: disabled text
+- `--ds-color-text-inverse`: text on inverse/action backgrounds
+- `--ds-color-border-subtle`: low-emphasis borders
+- `--ds-color-border-default`: default borders
+- `--ds-color-border-strong`: emphasized borders
+- `--ds-color-border-focus`: focus borders
 
 ## Action Tokens
 

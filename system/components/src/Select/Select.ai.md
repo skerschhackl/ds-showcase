@@ -20,6 +20,7 @@ Use `Select` for choosing one option from a small finite set.
 - Use `error` only for specific, actionable validation feedback.
 - Placeholder or first-option text cannot replace the label or carry required instructions.
 - The component wires `hint` and `error` to `aria-describedby` and sets `aria-invalid` when `error` is present; do not duplicate those ARIA props manually.
+- When `error` is present, the visible error state includes both the error copy and the approved danger-border treatment.
 
 ## AI Generation Notes
 

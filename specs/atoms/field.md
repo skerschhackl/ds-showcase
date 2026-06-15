@@ -17,6 +17,7 @@ Use `Field` as a public low-level wrapper for custom labeled form controls.
 - Prefer `Input`, `Select`, or `Textarea` for generated screen fields.
 - Use Field only for human-authored custom controls that need the shared label, hint, error, and ARIA behavior.
 - Child controls must spread the provided control props.
+- Custom child controls must visually honor `aria-invalid="true"` with the approved danger-border treatment; error copy alone is not a complete error state.
 
 ## Related Contract
 

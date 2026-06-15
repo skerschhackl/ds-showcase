@@ -17,6 +17,8 @@ Use component-local `*.ai.md` files to confirm exact props and usage constraints
 
 When changing approved visual treatments, update the component CSS, token contract, specs, and tests together. Do not introduce raw color, shadow, duration, or motion values where sanctioned tokens already exist.
 
+For form fields, specify error states as both accessible and visible: actionable error copy, preserved invalid state, and the approved danger-border treatment.
+
 ## Steps
 
 1. Identify the primary user and the task they need to complete.

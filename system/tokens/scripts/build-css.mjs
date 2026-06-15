@@ -12,9 +12,17 @@ const toKebab = (value) =>
 
 const cssName = (parts) => `--ds-${parts.map(toKebab).join("-")}`;
 
+const cssPathAliases = {
+  textSemantic: "text",
+  borderSemantic: "border",
+};
+
+const normalizePathParts = (pathParts) =>
+  pathParts.map((part) => cssPathAliases[part] ?? part);
+
 const collectVars = (value, pathParts = []) => {
   if (typeof value === "string") {
-    return [[cssName(pathParts), value]];
+    return [[cssName(normalizePathParts(pathParts)), value]];
   }
 
   return Object.entries(value).flatMap(([key, child]) => collectVars(child, [...pathParts, key]));

@@ -4,7 +4,6 @@ import {
   Badge,
   Button,
   Card,
-  Field,
   Input,
   Select,
   Spinner,
@@ -15,30 +14,12 @@ import {
   getDefaultTabId,
   getDefaultTabPanelId
 } from "@ds/components";
-import tokens from "@ds/tokens";
-import type { GovernanceMeta, SemanticColor } from "../../showcaseTypes";
+import tokens, { colorRoles } from "@ds/tokens";
 
 const primitiveFamilies = Object.keys(tokens.color.primitive) as Array<keyof typeof tokens.color.primitive>;
-const statusSwatches: SemanticColor[] = [
-  { label: "Success", token: "--ds-color-status-success-bg", value: tokens.color.status.success.bg },
-  { label: "Warning", token: "--ds-color-status-warning-bg", value: tokens.color.status.warning.bg },
-  { label: "Danger", token: "--ds-color-status-danger-bg", value: tokens.color.status.danger.bg },
-  { label: "Info", token: "--ds-color-status-info-bg", value: tokens.color.status.info.bg }
-];
-const neutralSwatches: SemanticColor[] = [
-  { label: "Canvas", token: "--ds-color-bg-canvas", value: tokens.color.bg.canvas },
-  { label: "Surface", token: "--ds-color-bg-surface", value: tokens.color.bg.surface },
-  { label: "Raised", token: "--ds-color-bg-surface-raised", value: tokens.color.bg.surfaceRaised },
-  { label: "Primary text", token: "--ds-color-text-semantic-primary", value: tokens.color.textSemantic.primary },
-  { label: "Secondary text", token: "--ds-color-text-semantic-secondary", value: tokens.color.textSemantic.secondary },
-  { label: "Default border", token: "--ds-color-border-semantic-default", value: tokens.color.borderSemantic.default }
-];
-const actionSwatches: SemanticColor[] = [
-  { label: "Primary", token: "--ds-color-action-primary-bg", value: tokens.color.action.primary.bg },
-  { label: "Secondary", token: "--ds-color-action-secondary-bg", value: tokens.color.action.secondary.bg },
-  { label: "Creative", token: "--ds-color-accent-semantic-creative-bg", value: tokens.color.accentSemantic.creative.bg },
-  { label: "Warm", token: "--ds-color-accent-semantic-warm-bg", value: tokens.color.accentSemantic.warm.bg }
-];
+type TokenEvidence = { label: string; token: string; value: string; usage: string };
+type ComponentExampleSpan = "default" | "full";
+type StatusTone = keyof typeof colorRoles.status;
 
 export function ComponentsGallery() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -46,6 +27,19 @@ export function ComponentsGallery() {
   return (
     <section className="components-page" aria-label="Design system components">
       <ColorPaletteOverview />
+
+      <Card className="component-example component-example--full">
+        <div className="component-example__header">
+          <div>
+            <h3>Component gaps</h3>
+            <p>
+              Modal, toast, chart, drawer, date picker, file upload, tooltip, and sidebar are not available yet.
+              <br />
+              Storybook remains the implementation reference for full component APIs and low-level wrappers.
+            </p>
+          </div>
+        </div>
+      </Card>
 
       <div className="component-grid" id="approved-components">
         <ComponentExample
@@ -68,21 +62,21 @@ export function ComponentsGallery() {
         </ComponentExample>
 
         <ComponentExample
-          name="Card"
-          description="Surface container for metrics, summaries, and compact grouped content."
-          meta={[{ label: "Generator", value: "Layouts" }]}
+          name="Spinner"
+          description="Progress indicator sizes for pending generation and asynchronous actions."
         >
-          <div className="component-surface-demo">
-            <span className="metric-label">Workspace health</span>
-            <strong className="metric-value metric-value--small">Ready</strong>
-            <p className="component-note">Cards use tokenized border, radius, spacing, and shadow.</p>
-          </div>
+          <VariantGroup label="Sizes">
+            <span className="spinner-sample"><Spinner label="Small loading indicator" size="sm" /> Small</span>
+            <span className="spinner-sample"><Spinner label="Medium loading indicator" /> Medium</span>
+          </VariantGroup>
+          <VariantGroup label="Button loading">
+            <Button loading loadingLabel="Generating UI">Generate UI</Button>
+          </VariantGroup>
         </ComponentExample>
 
         <ComponentExample
           name="Input"
           description="Labeled text entry with hint, error, and disabled states."
-          meta={[{ label: "A11y", value: "Labels", tone: "success" }]}
         >
           <div className="form-variant-stack">
             <Input label="Workspace name" placeholder="Acme workspace" hint="Visible labels are required." />
@@ -92,24 +86,8 @@ export function ComponentsGallery() {
         </ComponentExample>
 
         <ComponentExample
-          name="Field"
-          description="Public label, hint, error, and ARIA wrapper for custom form controls."
-          meta={[{ label: "A11y", value: "Wrapper", tone: "success" }]}
-        >
-          <div className="form-variant-stack">
-            <Field id="custom-slug" label="Custom slug" hint="Use lowercase letters and dashes.">
-              {(controlProps) => <input className="ds-input" placeholder="acme-workspace" {...controlProps} />}
-            </Field>
-            <Field id="custom-token" label="Custom token" error="Token is required.">
-              {(controlProps) => <input className="ds-input" placeholder="tok_..." {...controlProps} />}
-            </Field>
-          </div>
-        </ComponentExample>
-
-        <ComponentExample
           name="Select"
           description="Option picker with hint, error, and disabled states."
-          meta={[{ label: "A11y", value: "Labels", tone: "success" }]}
         >
           <div className="form-variant-stack">
             <Select
@@ -147,7 +125,6 @@ export function ComponentsGallery() {
         <ComponentExample
           name="Textarea"
           description="Labeled multi-line text entry for prompts, notes, descriptions, and feedback."
-          meta={[{ label: "A11y", value: "Labels", tone: "success" }]}
         >
           <div className="form-variant-stack">
             <Textarea
@@ -166,9 +143,31 @@ export function ComponentsGallery() {
         </ComponentExample>
 
         <ComponentExample
+          name="Alert"
+          description="System feedback across every approved tone."
+        >
+          <div className="screen-stack">
+            <Alert tone="neutral" title="Ready">The workflow is available for review.</Alert>
+            <Alert tone="success" title="Saved">The generated screen passed component review.</Alert>
+            <Alert tone="warning" title="Review needed">A requested pattern is not available yet.</Alert>
+            <Alert tone="danger" title="Failed">The screen includes a blocked component request.</Alert>
+          </div>
+        </ComponentExample>
+
+        <ComponentExample
+          name="Card"
+          description="Surface container for metrics, summaries, and compact grouped content."
+        >
+          <div className="component-surface-demo">
+            <span className="metric-label">Workspace health</span>
+            <strong className="metric-value metric-value--small">Ready</strong>
+            <p className="component-note">Cards use tokenized border, radius, spacing, and shadow.</p>
+          </div>
+        </ComponentExample>
+
+        <ComponentExample
           name="Badge"
           description="Text status indicators across every approved tone."
-          meta={[{ label: "Purpose", value: "Status" }]}
         >
           <div className="badge-row">
             <Badge>Neutral</Badge>
@@ -180,23 +179,8 @@ export function ComponentsGallery() {
         </ComponentExample>
 
         <ComponentExample
-          name="Spinner"
-          description="Progress indicator sizes for pending generation and asynchronous actions."
-          meta={[{ label: "State", value: "Async" }]}
-        >
-          <VariantGroup label="Sizes">
-            <span className="spinner-sample"><Spinner label="Small loading indicator" size="sm" /> Small</span>
-            <span className="spinner-sample"><Spinner label="Medium loading indicator" /> Medium</span>
-          </VariantGroup>
-          <VariantGroup label="Button loading">
-            <Button loading loadingLabel="Generating UI">Generate UI</Button>
-          </VariantGroup>
-        </ComponentExample>
-
-        <ComponentExample
           name="Tabs"
           description="Segmented navigation with keyboard-supported selected states."
-          meta={[{ label: "A11y", value: "Panels", tone: "success" }]}
         >
           <Tabs
             ariaLabel="Component example tabs"
@@ -226,22 +210,9 @@ export function ComponentsGallery() {
         </ComponentExample>
 
         <ComponentExample
-          name="Alert"
-          description="System feedback across every approved tone."
-          meta={[{ label: "A11y", value: "Roles", tone: "success" }]}
-        >
-          <div className="screen-stack">
-            <Alert tone="neutral" title="Ready">The workflow is available for review.</Alert>
-            <Alert tone="success" title="Saved">The generated screen passed component review.</Alert>
-            <Alert tone="warning" title="Review needed">A requested pattern is not available yet.</Alert>
-            <Alert tone="danger" title="Failed">The screen includes a blocked component request.</Alert>
-          </div>
-        </ComponentExample>
-
-        <ComponentExample
           name="Table"
           description="Comparable row data with captioned and action-oriented cells."
-          meta={[{ label: "A11y", value: "Caption", tone: "success" }]}
+          span="full"
         >
           <div className="table-variant-stack">
             <Table
@@ -265,12 +236,6 @@ export function ComponentsGallery() {
         </ComponentExample>
       </div>
 
-      <div id="component-gaps">
-        <Alert tone="neutral" title="Not available yet">
-          Modal, toast, chart, drawer, date picker, file upload, tooltip, and sidebar are currently flagged as
-          component gaps.
-        </Alert>
-      </div>
     </section>
   );
 }
@@ -290,55 +255,138 @@ function ColorPaletteOverview() {
       <div className="palette-overview__header">
         <div>
           <h3 id="palette-title">Color tokens</h3>
-          <p>Teal leads action, purple carries creative moments, coral adds warmth, and status colors stay functional.</p>
+          <p>Base surfaces, text, borders, and status colors used by the approved components.</p>
         </div>
-        <Badge tone="primary">Web palette</Badge>
       </div>
 
-      <div className="semantic-palette-grid">
-        <SemanticSwatchGroup title="Neutral semantics" swatches={neutralSwatches} />
-        <SemanticSwatchGroup title="Actions and accents" swatches={actionSwatches} />
-        <SemanticSwatchGroup title="Status" swatches={statusSwatches} />
-      </div>
+      <AppliedSemanticTokens />
 
       <div className="palette-families" aria-label="Primitive color families">
         {primitiveFamilies.map((family) => (
-          <div className="palette-family" key={family}>
-            <div className="palette-family__label">
-              <strong>{titleCase(family)}</strong>
-              <span>Primitive</span>
-            </div>
-            <div className="palette-ramp" aria-label={`${family} primitive color scale`}>
-              {Object.entries(tokens.color.primitive[family]).map(([step, value]) => (
-                <span
-                  className="palette-ramp__swatch"
-                  key={step}
-                  style={{ backgroundColor: value }}
-                  title={`--ds-color-primitive-${family}-${step}: ${value}`}
-                >
-                  <span>{step}</span>
-                </span>
-              ))}
-            </div>
-          </div>
+          <PrimitivePaletteFamily family={family} key={family} />
         ))}
       </div>
     </section>
   );
 }
 
-function SemanticSwatchGroup({ title, swatches }: { title: string; swatches: SemanticColor[] }) {
+function PrimitivePaletteFamily({ family }: { family: keyof typeof tokens.color.primitive }) {
+  const colorSteps = Object.entries(tokens.color.primitive[family]);
+
   return (
-    <div className="semantic-swatch-group">
-      <h4>{title}</h4>
-      <div className="semantic-swatch-list">
-        {swatches.map((swatch) => (
-          <div className="semantic-swatch" key={swatch.token}>
-            <span className="semantic-swatch__chip" style={{ backgroundColor: swatch.value }} />
-            <div>
-              <strong>{swatch.label}</strong>
-              <span>{swatch.token}</span>
-            </div>
+    <div className="palette-family">
+      <div className="palette-family__label">
+        <strong>{titleCase(family)}</strong>
+        <span>Primitive</span>
+      </div>
+      <div
+        className="palette-ramp"
+        style={{ gridTemplateColumns: `repeat(${colorSteps.length}, minmax(0, 1fr))` }}
+        aria-label={`${family} primitive color scale`}
+      >
+        {colorSteps.map(([step, value]) => (
+          <span
+            className="palette-ramp__swatch"
+            key={step}
+            style={{ backgroundColor: value }}
+            title={`--ds-color-primitive-${family}-${step}: ${value}`}
+          >
+            <span>{step}</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AppliedSemanticTokens() {
+  return (
+    <div className="semantic-token-grid" aria-label="Applied semantic token groups">
+      <section className="semantic-token-card semantic-token-card--base">
+        <div>
+          <h4>Base</h4>
+          <p>Base colors used together for page canvas, surfaces, copy, borders, and focus.</p>
+        </div>
+        <div className="semantic-base-columns">
+          <TokenEvidenceList
+            items={[
+              { label: "Canvas", token: "--ds-color-bg-canvas", value: colorRoles.bg.canvas, usage: "Page background" },
+              { label: "Surface", token: "--ds-color-bg-surface", value: colorRoles.bg.surface, usage: "Cards and controls" },
+              { label: "Raised", token: "--ds-color-bg-surface-raised", value: colorRoles.bg.surfaceRaised, usage: "Elevated surfaces" }
+            ]}
+          />
+          <TokenEvidenceList
+            items={[
+              { label: "Primary text", token: "--ds-color-text-primary", value: colorRoles.text.primary, usage: "Main copy" },
+              { label: "Secondary text", token: "--ds-color-text-secondary", value: colorRoles.text.secondary, usage: "Supporting copy" },
+              { label: "Border", token: "--ds-color-border-default", value: colorRoles.border.default, usage: "Control edges" },
+              { label: "Focus border", token: "--ds-color-border-focus", value: colorRoles.border.focus, usage: "Focus states" }
+            ]}
+          />
+        </div>
+      </section>
+
+      <section className="semantic-token-card semantic-token-card--status">
+        <div>
+          <h4>Status</h4>
+          <p>State colors work as bundles: surface, soft fill, text, border, and icon.</p>
+        </div>
+        <div className="semantic-status-groups">
+          {(["success", "danger", "warning", "info"] as const).map((tone) => (
+            <StatusTokenSet tone={tone} key={tone} />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function StatusTokenSet({ tone }: { tone: StatusTone }) {
+  const status = colorRoles.status[tone];
+
+  return (
+    <section className="semantic-status-group" aria-label={`${titleCase(tone)} status tokens`}>
+      <div
+        className="semantic-status-sample"
+        style={{ backgroundColor: status.bg, borderColor: status.border, color: status.text }}
+      >
+        <span className="semantic-status-sample__icon" style={{ backgroundColor: status.icon }} />
+        <strong>{titleCase(tone)}</strong>
+        <span style={{ backgroundColor: status.soft }}>Soft fill</span>
+      </div>
+      <TokenEvidenceList
+        compact
+        items={[
+          { label: "Surface", token: `--ds-color-status-${tone}-bg`, value: status.bg, usage: "Alert surface" },
+          { label: "Soft", token: `--ds-color-status-${tone}-soft`, value: status.soft, usage: "Badge fill" },
+          { label: "Text", token: `--ds-color-status-${tone}-text`, value: status.text, usage: "State copy" },
+          { label: "Border", token: `--ds-color-status-${tone}-border`, value: status.border, usage: "Alert edge" },
+          { label: "Icon", token: `--ds-color-status-${tone}-icon`, value: status.icon, usage: "State icon" }
+        ]}
+      />
+    </section>
+  );
+}
+
+function TokenEvidenceList({
+  items,
+  title,
+  compact = false
+}: {
+  items: TokenEvidence[];
+  title?: string;
+  compact?: boolean;
+}) {
+  return (
+    <div className={`token-evidence${compact ? " token-evidence--compact" : ""}`}>
+      {title ? <h5>{title}</h5> : null}
+      <div className="token-evidence__rows">
+        {items.map((item) => (
+          <div className="token-evidence__row" key={item.token}>
+            <span className="token-evidence__swatch" style={{ backgroundColor: item.value }} />
+            <strong>{item.label}</strong>
+            <code>{item.token}</code>
+            <span>{item.usage}</span>
           </div>
         ))}
       </div>
@@ -349,33 +397,21 @@ function SemanticSwatchGroup({ title, swatches }: { title: string; swatches: Sem
 function ComponentExample({
   name,
   description,
-  meta,
-  children
+  children,
+  span = "default"
 }: {
   name: string;
   description: string;
-  meta?: GovernanceMeta[];
   children: React.ReactNode;
+  span?: ComponentExampleSpan;
 }) {
-  const governanceMeta = meta ?? [{ label: "Status", value: "Approved", tone: "success" }];
-
   return (
-    <Card className="component-example">
+    <Card className={`component-example${span === "full" ? " component-example--full" : ""}`}>
       <div className="component-example__header">
         <div>
           <h3>{name}</h3>
           <p>{description}</p>
         </div>
-        <dl className="component-meta" aria-label={`${name} governance`}>
-          {governanceMeta.map((item) => (
-            <div key={`${item.label}-${item.value}`}>
-              <dt>{item.label}</dt>
-              <dd>
-                <Badge tone={item.tone ?? "primary"}>{item.value}</Badge>
-              </dd>
-            </div>
-          ))}
-        </dl>
       </div>
       <div className="component-example__demo">{children}</div>
     </Card>

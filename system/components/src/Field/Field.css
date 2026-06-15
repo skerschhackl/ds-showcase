@@ -22,3 +22,7 @@
   color: var(--ds-color-danger-text);
   font-weight: 700;
 }
+
+.ds-field :where(input, select, textarea, [role="combobox"], [role="textbox"])[aria-invalid="true"] {
+  border-color: var(--ds-color-danger-border);
+}

@@ -23,6 +23,7 @@ const styles = styleFiles.map((file) => readFileSync(new URL(file, import.meta.u
 const inputStyles = readFileSync(new URL("./Input/Input.css", import.meta.url), "utf8");
 const selectStyles = readFileSync(new URL("./Select/Select.css", import.meta.url), "utf8");
 const textareaStyles = readFileSync(new URL("./Textarea/Textarea.css", import.meta.url), "utf8");
+const tokenStyles = readFileSync(new URL("../../tokens/src/styles.css", import.meta.url), "utf8");
 
 describe("component styles", () => {
   it("honors reduced motion preferences", () => {
@@ -39,6 +40,15 @@ describe("component styles", () => {
     expect(contrast(tokens.color.successText, tokens.color.successSoft)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(tokens.color.warningText, tokens.color.warningSoft)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(tokens.color.dangerText, tokens.color.dangerSoft)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("uses clean text and border role token names", () => {
+    expect(tokenStyles).toContain("--ds-color-text-primary");
+    expect(tokenStyles).toContain("--ds-color-text-secondary");
+    expect(tokenStyles).toContain("--ds-color-border-default");
+    expect(tokenStyles).toContain("--ds-color-border-focus");
+    expect(tokenStyles).not.toContain("--ds-color-text-semantic");
+    expect(tokenStyles).not.toContain("--ds-color-border-semantic");
   });
 
   it("defines the sanctioned AI ambient control treatment", () => {
@@ -71,6 +81,20 @@ describe("component styles", () => {
     expect(inputStyles).not.toContain("width: 100%");
     expect(selectStyles).not.toContain("width: 100%");
     expect(textareaStyles).not.toContain("width: 100%");
+  });
+
+  it("tints invalid form control borders with the danger border token", () => {
+    expect(inputStyles).toMatch(/\.ds-input\[aria-invalid="true"\]\s*\{[\s\S]*border-color: var\(--ds-color-danger-border\)/);
+    expect(selectStyles).toMatch(/\.ds-select\[aria-invalid="true"\]\s*\{[\s\S]*border-color: var\(--ds-color-danger-border\)/);
+    expect(textareaStyles).toMatch(/\.ds-textarea\[aria-invalid="true"\]\s*\{[\s\S]*border-color: var\(--ds-color-danger-border\)/);
+    expect(styles).toMatch(/\.ds-field :where\(input, select, textarea, \[role="combobox"\], \[role="textbox"\]\)\[aria-invalid="true"\]\s*\{[\s\S]*border-color: var\(--ds-color-danger-border\)/);
+  });
+
+  it("keeps button variants aligned to action color tokens", () => {
+    expect(styles).toMatch(/\.ds-button--primary\s*\{[\s\S]*var\(--ds-color-action-primary-bg\)/);
+    expect(styles).toMatch(/\.ds-button--primary:hover\s*\{[\s\S]*var\(--ds-color-action-primary-bg-hover\)/);
+    expect(styles).toMatch(/\.ds-button--secondary\s*\{[\s\S]*color: var\(--ds-color-action-secondary-text\)/);
+    expect(styles).toMatch(/\.ds-button--secondary:hover\s*\{[\s\S]*background: var\(--ds-color-action-secondary-bg\)/);
   });
 });
 

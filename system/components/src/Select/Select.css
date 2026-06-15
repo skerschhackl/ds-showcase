@@ -12,3 +12,7 @@
   box-shadow: var(--ds-focus-ring);
   outline: none;
 }
+
+.ds-select[aria-invalid="true"] {
+  border-color: var(--ds-color-danger-border);
+}

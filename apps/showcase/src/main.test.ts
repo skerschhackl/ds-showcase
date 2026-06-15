@@ -1,8 +1,14 @@
 import { readFileSync } from "node:fs";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { ComponentsGallery } from "./features/components-gallery/ComponentsGallery";
 
 const source = readFileSync(new URL("./main.tsx", import.meta.url), "utf8");
+const appStyles = readFileSync(new URL("./app.css", import.meta.url), "utf8");
+const componentsGalleryStyles = readFileSync(new URL("./features/components-gallery/componentsGallery.css", import.meta.url), "utf8");
 const generatorBehavior = readFileSync(new URL("./features/generator/README.md", import.meta.url), "utf8");
+const componentsGalleryMarkup = renderToStaticMarkup(createElement(ComponentsGallery));
 
 describe("showcase ambient AI control usage", () => {
   it("keeps the ambient treatment scoped to the prompt textarea", () => {
@@ -55,5 +61,64 @@ describe("showcase ambient AI control usage", () => {
     expect(source).not.toContain("aria-pressed={selectedId === scenario.id}");
     expect(source).not.toContain('idPrefix="prompt-examples"');
     expect(source).not.toContain('hint="Edit the current prompt, then generate again to update the screen."');
+  });
+
+  it("anchors the app nav as a full-width control below the compact hero", () => {
+    expect(appStyles).toMatch(/\.hero\s*\{[\s\S]*min-height: 26vh/);
+    expect(appStyles).toMatch(/\.showcase-tabs\s*\{[\s\S]*justify-self: stretch/);
+    expect(appStyles).toMatch(/\.showcase-tabs\s*\{[\s\S]*width: 100%/);
+    expect(appStyles).toMatch(/\.showcase-tabs \.ds-tabs__tab\s*\{[\s\S]*flex: 1 1 0/);
+  });
+
+  it("omits component governance metadata from gallery card headers", () => {
+    expect(componentsGalleryStyles).not.toContain(".component-meta");
+    expect(componentsGalleryMarkup).not.toContain("component-meta");
+  });
+
+  it("renders semantic token evidence with current color token names", () => {
+    expect(componentsGalleryMarkup).toContain("aria-label=\"Applied semantic token groups\"");
+    expect(componentsGalleryMarkup).toContain("Base");
+    expect(componentsGalleryMarkup).toContain("Status");
+    expect(componentsGalleryMarkup).toContain("--ds-color-text-primary");
+    expect(componentsGalleryMarkup).toContain("--ds-color-border-default");
+    expect(componentsGalleryMarkup).not.toContain("--ds-color-text-semantic");
+    expect(componentsGalleryMarkup).not.toContain("--ds-color-border-semantic");
+    expect(componentsGalleryStyles).toContain(".semantic-status-groups");
+    expect(componentsGalleryStyles).toContain(".semantic-base-columns");
+    expect(componentsGalleryStyles).toContain(".token-evidence__row");
+  });
+
+  it("uses a two-column component layout with explicit full-width exceptions", () => {
+    expect(componentsGalleryStyles).toMatch(/\.component-grid\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+    expect(componentsGalleryStyles).toContain(".component-example--full");
+    expect(componentsGalleryMarkup).toContain("component-example component-example--full");
+  });
+
+  it("orders component examples by related component families", () => {
+    const exampleOrder = [...componentsGalleryMarkup.matchAll(/<h3>([^<]+)<\/h3>/g)]
+      .map((match) => match[1])
+      .filter((heading) => heading !== "Component gaps");
+
+    expect(exampleOrder).toEqual([
+      "Button",
+      "Spinner",
+      "Input",
+      "Select",
+      "Textarea",
+      "Alert",
+      "Card",
+      "Badge",
+      "Tabs",
+      "Table"
+    ]);
+    expect(exampleOrder).not.toContain("Field");
+  });
+
+  it("places component gaps as a card before the component gallery", () => {
+    expect(componentsGalleryMarkup.indexOf("Component gaps")).toBeLessThan(
+      componentsGalleryMarkup.indexOf("id=\"approved-components\"")
+    );
+    expect(componentsGalleryMarkup).toContain("Storybook");
+    expect(componentsGalleryMarkup).not.toContain("id=\"component-gaps\"");
   });
 });

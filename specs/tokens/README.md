@@ -22,6 +22,6 @@ Tokens are the visual source of truth. AI-generated UI must choose from these na
 - Use CSS custom properties in generated CSS.
 - Do not use raw hex, rgb, rgba, pixel, rem, radius, or shadow values outside token source files.
 - If a needed token does not exist, report a token gap instead of inventing one.
-- Prefer semantic tokens such as `--ds-color-bg-surface`, `--ds-color-text-semantic-primary`, and `--ds-color-border-semantic-default`.
+- Prefer semantic tokens such as `--ds-color-bg-surface`, `--ds-color-text-primary`, and `--ds-color-border-default`.
 - Use `--ds-color-status-*` tokens for status UI and never rely on color alone.
 - Use expressive AI tokens only through approved patterns such as `.ds-ai-control`.

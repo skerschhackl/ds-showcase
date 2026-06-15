@@ -14,3 +14,7 @@
   box-shadow: var(--ds-focus-ring);
   outline: none;
 }
+
+.ds-textarea[aria-invalid="true"] {
+  border-color: var(--ds-color-danger-border);
+}

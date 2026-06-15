@@ -17,6 +17,7 @@ Use `Field` as a low-level wrapper when building a custom form control that need
 - Prefer `Input`, `Select`, or `Textarea` for generated screen fields.
 - Use `Field` only when a human-authored component needs to wrap a custom control.
 - The child control must spread the generated control props so `id`, `aria-describedby`, and `aria-invalid` are preserved.
+- Custom controls wrapped by `Field` must visually honor `aria-invalid="true"` with the approved danger-border treatment; error copy alone is not enough.
 - Placeholder text cannot replace the visible `label`.
 
 ## AI Generation Notes

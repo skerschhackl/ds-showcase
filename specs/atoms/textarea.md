@@ -19,6 +19,7 @@ Use `Textarea` for multi-line text entry with a visible label.
 - Use `hint` only when the field needs meaningful extra guidance.
 - Use `error` only for specific, actionable validation feedback.
 - Hints and errors are programmatically connected by the component; prefer `hint` and `error` props over custom markup.
+- Error state must include the approved danger-border treatment; do not show error copy while leaving the textarea edge neutral.
 
 ## Related Contract
 
