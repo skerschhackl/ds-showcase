@@ -14,13 +14,17 @@ The generated screen organism renders a prompt-specific product screen from appr
 ## AI Rules
 
 - Generated screens must use only approved atoms and molecules.
-- If the prompt asks for unsupported UI such as chart, modal, toast, drawer, date picker, sidebar, or file upload, use approved fallbacks and flag the gap.
+- If the prompt asks for a pattern listed in `unsupportedComponentNames` from `@ds/ai-contracts`, use approved fallbacks and flag the gap.
+- Table cells may contain text, numbers, booleans, badge cells, one action cell, or an explicit multi-action cell shaped as `{ actions: [{ action, variant }] }`; do not emit raw JSX, nested arrays, or ad hoc button objects.
 - Keep product screens scannable, spacious enough to breathe, and task-focused.
 - Use loading skeletons for the result surface while generation is in progress.
 - Use `Button` loading state for the generate action itself.
 
 ## Related Files
 
-- `apps/showcase/src/main.tsx`
+- `apps/showcase/src/App.tsx`
+- `apps/showcase/src/features/generator/GeneratedScreen.tsx`
 - `apps/showcase/src/liveComposer.ts`
+- `packages/ai-contracts/src/live-composer-response.ts`
+- `packages/ai-contracts/src/normalize.ts`
 - `ai/live-composer.schema.json`

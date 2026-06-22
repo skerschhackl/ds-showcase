@@ -13,6 +13,8 @@ export function normalizeLiveComposerResponse(
     return {
       data: {
         ...parsed.data,
+        components: clampAllowedComponents(parsed.data.components),
+        unsupported: normalizeUnsupportedComponents(parsed.data.unsupported, parsed.data.components),
         screen: normalizeLiveComposerScreen(parsed.data.screen, parsed.data.title)
       },
       diagnostics: []
@@ -177,8 +179,24 @@ function normalizeTableCell(cell: unknown): TableCellValue {
     return cell == null ? "" : cell;
   }
 
+  if (Array.isArray(cell)) {
+    const actions = normalizeActionCellArray(cell);
+
+    return actions
+      ? { actions }
+      : cell.map((item) => tableCellToPlainText(normalizeTableCell(item))).filter(Boolean).join(", ");
+  }
+
   if (!isRecord(cell)) {
     return String(cell);
+  }
+
+  if (Array.isArray(cell.actions)) {
+    const actions = normalizeActionCellArray(cell.actions);
+
+    if (actions) {
+      return { actions };
+    }
   }
 
   const action = actionLabelFromCell(cell);
@@ -198,6 +216,56 @@ function normalizeTableCell(cell: unknown): TableCellValue {
   }
 
   return JSON.stringify(cell);
+}
+
+function normalizeActionCellArray(
+  cell: unknown[]
+): Array<{ action: string; variant: "primary" | "secondary" | "ghost" }> | undefined {
+  if (cell.length === 0) {
+    return undefined;
+  }
+
+  const actions = cell.map((item) => {
+    if (!isRecord(item)) {
+      return undefined;
+    }
+
+    const action = actionLabelFromCell(item);
+    return action ? { action, variant: normalizeButtonVariant(item.variant) } : undefined;
+  });
+
+  return actions.every((action): action is { action: string; variant: "primary" | "secondary" | "ghost" } => Boolean(action))
+    ? actions
+    : undefined;
+}
+
+function tableCellToPlainText(cell: TableCellValue): string {
+  if (typeof cell === "string" || typeof cell === "number" || typeof cell === "boolean") {
+    return String(cell);
+  }
+
+  if ("text" in cell) {
+    if (typeof cell.text === "string") {
+      return cell.text;
+    }
+  }
+
+  if ("action" in cell) {
+    if (typeof cell.action === "string") {
+      return cell.action;
+    }
+  }
+
+  if ("actions" in cell) {
+    if (Array.isArray(cell.actions)) {
+      return cell.actions
+        .map((action) => isRecord(action) && typeof action.action === "string" ? action.action : "")
+        .filter(Boolean)
+        .join(", ");
+    }
+  }
+
+  return "";
 }
 
 function actionLabelFromCell(cell: Record<string, unknown>): string | undefined {

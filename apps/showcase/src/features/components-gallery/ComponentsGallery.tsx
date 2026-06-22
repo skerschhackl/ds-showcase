@@ -14,6 +14,7 @@ import {
   getDefaultTabId,
   getDefaultTabPanelId
 } from "@ds/components";
+import { unsupportedComponentNames } from "@ds/ai-contracts";
 import tokens, { colorRoles } from "@ds/tokens";
 
 const primitiveFamilies = Object.keys(tokens.color.primitive) as Array<keyof typeof tokens.color.primitive>;
@@ -33,7 +34,7 @@ export function ComponentsGallery() {
           <div>
             <h3>Component gaps</h3>
             <p>
-              Modal, toast, chart, drawer, date picker, file upload, tooltip, and sidebar are not available yet.
+              {formatComponentList(unsupportedComponentNames)} are not available yet.
               <br />
               Storybook remains the implementation reference for full component APIs and low-level wrappers.
             </p>
@@ -420,4 +421,10 @@ function ComponentExample({
 
 function titleCase(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function formatComponentList(components: readonly string[]) {
+  return components
+    .map((component, index) => index === 0 ? component : component.toLowerCase())
+    .join(", ");
 }

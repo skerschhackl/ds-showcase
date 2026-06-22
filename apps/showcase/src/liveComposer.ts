@@ -2,6 +2,7 @@ import {
   approvedComponentNames as schemaApprovedComponentNames,
   normalizeLiveComposerResponse,
   normalizeLiveComposerScreen,
+  normalizeUnsupportedComponents as normalizeContractUnsupportedComponents,
   parseLiveComposerResponse,
   type LiveComposerResponseBody,
   type LiveComposerScreen,
@@ -66,18 +67,7 @@ export function normalizeComponentNames(components: string[]): string[] {
 }
 
 export function normalizeUnsupportedComponents(components: string[]) {
-  const approvedLookup = new Set(approvedComponentNames.map((component) => component.toLowerCase()));
-  const seen = new Set<string>();
-  const normalized = components
-    .map((component) => component.trim())
-    .filter((component) => {
-      const key = component.toLowerCase();
-      const keep = component && !approvedLookup.has(key) && !seen.has(key);
-      seen.add(key);
-      return keep;
-    });
-
-  return normalized;
+  return normalizeContractUnsupportedComponents(components);
 }
 
 export function isLiveComposerPayload(payload: unknown): payload is LiveComposerPayload {

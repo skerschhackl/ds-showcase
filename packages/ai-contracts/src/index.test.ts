@@ -4,9 +4,11 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   LiveComposerResponseJsonSchema,
+  detectUnsupportedComponentRequests,
   normalizeLiveComposerResponse,
   parseGenerateRequest,
-  parseLiveComposerResponse
+  parseLiveComposerResponse,
+  unsupportedComponentNames
 } from "./index.js";
 
 const currentFile = fileURLToPath(import.meta.url);
@@ -39,6 +41,16 @@ describe("shared AI contracts", () => {
     expect(parsed.data.allowedComponents).toEqual(["Alert", "Badge", "Button", "Card", "Input", "Select", "Table", "Tabs", "Textarea"]);
   });
 
+  it("exposes the unsupported component gap contract", () => {
+    expect(unsupportedComponentNames).toContain("Modal");
+    expect(unsupportedComponentNames).toContain("Chart");
+    expect(detectUnsupportedComponentRequests("Create a dashboard with charts and invite modal.")).toEqual([
+      "Chart",
+      "Modal"
+    ]);
+    expect(detectUnsupportedComponentRequests("Compare payment modalities and chartreuse states.")).toEqual([]);
+  });
+
   it("validates complete model responses", () => {
     const parsed = parseLiveComposerResponse({
       title: "Recovery Flow",
@@ -59,6 +71,30 @@ describe("shared AI contracts", () => {
     });
 
     expect(parsed.success).toBe(true);
+  });
+
+  it("normalizes unsupported component gaps even when the model response is schema-valid", () => {
+    const normalized = normalizeLiveComposerResponse({
+      title: "Recovery Flow",
+      summary: "Handle a failed sync.",
+      components: ["Alert", "Card", "Button"],
+      unsupported: ["Modal", "Button", "Modal"],
+      screen: {
+        alert: { tone: "danger", title: "Sync failed", body: "Review the failure and retry." },
+        metrics: [{ label: "Attempts", value: "3" }],
+        fields: [{ label: "Owner", kind: "input" }],
+        table: {
+          columns: ["Check", "Status"],
+          rows: [["Credentials", { text: "Valid", tone: "success" }]]
+        },
+        primaryAction: "Retry sync",
+        secondaryAction: "View logs"
+      }
+    });
+
+    expect(normalized.diagnostics).toEqual([]);
+    expect(normalized.data.components).toEqual(["Alert", "Card", "Button"]);
+    expect(normalized.data.unsupported).toEqual(["Modal"]);
   });
 
   it("validates and normalizes textarea fields", () => {
@@ -144,6 +180,65 @@ describe("shared AI contracts", () => {
       action: "Download all entries",
       variant: "secondary"
     });
+  });
+
+  it("normalizes multiple action objects inside one table cell into an explicit actions cell", () => {
+    const normalized = normalizeLiveComposerResponse({
+      title: "Team Roles",
+      summary: "Manage role actions.",
+      components: ["Badge", "Button", "Card", "Input", "Select", "Table"],
+      unsupported: [],
+      screen: {
+        alert: { tone: "neutral", title: "Roles ready", body: "Review role access." },
+        metrics: [{ label: "Roles", value: "2" }],
+        fields: [{ label: "Role", kind: "select", options: ["Admin", "Member"] }],
+        table: {
+          columns: ["Email", "Role", "Status", "Actions"],
+          rows: [[
+            "user1@example.com",
+            "Admin",
+            "Active",
+            [{ action: "Edit", variant: "secondary" }, { action: "Remove", variant: "ghost" }]
+          ]]
+        },
+        primaryAction: "Export all roles",
+        secondaryAction: "Export entire table"
+      }
+    });
+
+    expect(normalized.data.screen.table.rows[0][3]).toEqual({
+      actions: [
+        { action: "Edit", variant: "secondary" },
+        { action: "Remove", variant: "ghost" }
+      ]
+    });
+  });
+
+  it("normalizes invalid non-action table cell arrays into readable text", () => {
+    const normalized = normalizeLiveComposerResponse({
+      title: "Team Roles",
+      summary: "Manage role status notes.",
+      components: ["Badge", "Card", "Table"],
+      unsupported: [],
+      screen: {
+        alert: { tone: "neutral", title: "Roles ready", body: "Review role status." },
+        metrics: [{ label: "Roles", value: "2" }],
+        fields: [],
+        table: {
+          columns: ["Email", "Notes", "Mixed actions"],
+          rows: [[
+            "user1@example.com",
+            [{ text: "Ready", tone: "success" }, "needs review"],
+            [{ action: "Edit", variant: "secondary" }, "unexpected note"]
+          ]]
+        },
+        primaryAction: "Export all roles",
+        secondaryAction: "Export entire table"
+      }
+    });
+
+    expect(normalized.data.screen.table.rows[0][1]).toBe("Ready, needs review");
+    expect(normalized.data.screen.table.rows[0][2]).toBe("Edit, unexpected note");
   });
 
   it("keeps the checked-in provider JSON Schema generated from Zod", async () => {

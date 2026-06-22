@@ -2,8 +2,11 @@ export {
   ApprovedComponent,
   approvedComponentNames,
   clampAllowedComponents,
+  detectUnsupportedComponentRequests,
   normalizeUnsupportedComponents,
-  type ApprovedComponentName
+  unsupportedComponentNames,
+  type ApprovedComponentName,
+  type UnsupportedComponentName
 } from "./approved-components.js";
 export { GenerateRequest, parseGenerateRequest, type GenerateRequestBody } from "./generate-request.js";
 export { LiveComposerResponseJsonSchema } from "./json-schema.js";

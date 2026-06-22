@@ -4,11 +4,13 @@ The showcase app is the portfolio-facing product surface. It keeps design-system
 
 ## Structure
 
-- `src/main.tsx`: app shell, top-level state, and page composition.
+- `src/main.tsx`: React bootstrap for mounting the app.
+- `src/App.tsx`: app shell, top-level state, and page composition.
 - `src/app.css`: global app shell, hero, shared panel, and shared layout helpers.
 - `src/features/generator`: prompt-to-UI composition, live composer client, generated preview rendering, and generator styles.
 - `src/features/components-gallery`: component gallery, token palette display, and gallery styles.
 - `src/scenarios.ts`: prompt examples and hero copy.
+- `src/promptSummaries.ts`: compact prompt-intent summaries for compliance evidence.
 - `src/liveComposer.ts`: live response normalization helpers for the showcase boundary.
 
 ## CSS Naming

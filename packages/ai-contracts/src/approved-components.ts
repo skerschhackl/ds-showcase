@@ -3,7 +3,29 @@ import { z } from "zod";
 export const approvedComponentNames = ["Alert", "Badge", "Button", "Card", "Input", "Select", "Table", "Tabs", "Textarea"] as const;
 export type ApprovedComponentName = (typeof approvedComponentNames)[number];
 
+export const unsupportedComponentNames = [
+  "Accordion",
+  "Calendar",
+  "Chart",
+  "Date picker",
+  "Drawer",
+  "Dropdown menu",
+  "File upload",
+  "Kanban",
+  "Modal",
+  "Sidebar",
+  "Stepper",
+  "Toast",
+  "Tooltip",
+  "Wizard"
+] as const;
+export type UnsupportedComponentName = (typeof unsupportedComponentNames)[number];
+
 export const ApprovedComponent = z.enum(approvedComponentNames);
+
+const unsupportedComponentMatchPatterns = unsupportedComponentNames.map((component) =>
+  new RegExp(`(^|\\W)${escapeRegExp(component).replace(/\s+/g, "\\s+")}(s)?(?=\\W|$)`, "i")
+);
 
 export function clampAllowedComponents(components: unknown): ApprovedComponentName[] {
   if (!Array.isArray(components)) {
@@ -39,4 +61,14 @@ export function normalizeUnsupportedComponents(...componentLists: unknown[]): st
   }
 
   return normalized;
+}
+
+export function detectUnsupportedComponentRequests(prompt: string): UnsupportedComponentName[] {
+  return unsupportedComponentNames.filter((component, index) =>
+    unsupportedComponentMatchPatterns[index].test(prompt)
+  );
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

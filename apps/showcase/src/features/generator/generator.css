@@ -158,6 +158,12 @@
   line-height: 1.5;
 }
 
+.table-action-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-2);
+}
+
 .metric-bar {
   background: var(--ds-color-neutral-soft);
   border-radius: var(--ds-radius-pill);

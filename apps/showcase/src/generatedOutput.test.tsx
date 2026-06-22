@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
-import { buildCustomOutput } from "./generatedOutput";
-
-const source = readFileSync(new URL("./generatedOutput.tsx", import.meta.url), "utf8");
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { CustomGeneratedScreen, buildCustomOutput } from "./generatedOutput";
 
 describe("deterministic generated output", () => {
   it("honors explicit heading and download button requests", () => {
@@ -90,12 +89,44 @@ describe("deterministic generated output", () => {
     });
   });
 
+  it("renders multiple action objects inside one table cell as buttons", () => {
+    const output = buildCustomOutput("Create a team management screen with roles and invites.");
+    output.screen.table.columns = ["Email", "Role", "Status", "Actions"];
+    output.screen.table.rows = [
+      [
+        "user1@example.com",
+        "Admin",
+        "Active",
+        {
+          actions: [
+            { action: "Edit", variant: "secondary" },
+            { action: "Remove", variant: "ghost" }
+          ]
+        }
+      ]
+    ];
+
+    const markup = renderToStaticMarkup(createElement(CustomGeneratedScreen, { output }));
+
+    expect(markup).toContain("table-action-group");
+    expect(markup).toContain(">Edit</button>");
+    expect(markup).toContain(">Remove</button>");
+    expect(markup).not.toContain("[object Object]");
+  });
+
   it("does not render a fake action result simulator", () => {
-    expect(source).not.toContain("Action result");
-    expect(source).not.toContain("actionMessage");
+    const output = buildCustomOutput("Create an onboarding checklist with setup tasks.");
+    const markup = renderToStaticMarkup(createElement(CustomGeneratedScreen, { output }));
+
+    expect(markup).not.toContain("Action result");
+    expect(markup).not.toContain("actionMessage");
   });
 
   it("does not render the generated surface ready pill", () => {
-    expect(source).not.toContain('{hasGaps ? "Blocked" : "Ready"}');
+    const output = buildCustomOutput("Create a billing page with plans and invoices.");
+    const markup = renderToStaticMarkup(createElement(CustomGeneratedScreen, { output }));
+
+    expect(markup).not.toContain("Ready</span>");
+    expect(markup).not.toContain("Blocked</span>");
   });
 });

@@ -1,3 +1,4 @@
+import { detectUnsupportedComponentRequests } from "@ds/ai-contracts";
 import { inferScreenKind, type GeneratedScreen, type TableCell } from "../../liveComposer";
 import type { ComplianceItem, GeneratedOutput } from "../../showcaseTypes";
 import { extractActionIntents } from "./actionIntents";
@@ -44,24 +45,7 @@ export function buildCustomOutput(prompt: string): GeneratedOutput {
 }
 
 function findUnsupportedComponents(prompt: string) {
-  const unsupportedPatterns = [
-    "accordion",
-    "calendar",
-    "chart",
-    "date picker",
-    "drawer",
-    "dropdown menu",
-    "file upload",
-    "kanban",
-    "modal",
-    "sidebar",
-    "stepper",
-    "toast",
-    "tooltip",
-    "wizard"
-  ];
-  const normalized = prompt.toLowerCase();
-  return unsupportedPatterns.filter((pattern) => normalized.includes(pattern));
+  return detectUnsupportedComponentRequests(prompt);
 }
 
 function selectApprovedComponents(prompt: string) {

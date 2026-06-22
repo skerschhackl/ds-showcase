@@ -166,6 +166,16 @@ function renderTableCell(cell: TableCell | unknown) {
     return "";
   }
 
+  if (isActionsCell(cell)) {
+    return (
+      <span className="table-action-group">
+        {cell.actions.map((actionCell, index) => (
+          <span key={`${actionCell.action}-${index}`}>{renderTableCell(actionCell)}</span>
+        ))}
+      </span>
+    );
+  }
+
   if (typeof cell !== "object") {
     return String(cell);
   }
@@ -239,6 +249,10 @@ function actionLabelFromTableCell(cell: object): string | undefined {
   }
 
   return undefined;
+}
+
+function isActionsCell(cell: unknown): cell is { actions: Array<{ action: string; variant?: "primary" | "secondary" | "ghost" }> } {
+  return isRecord(cell) && Array.isArray(cell.actions);
 }
 
 function buttonVariantFromTableCell(cell: object): "primary" | "secondary" | "ghost" {

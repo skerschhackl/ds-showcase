@@ -29,14 +29,28 @@ const BadgeCellSchema = z.object({
   text: z.string(),
   tone: BadgeTone
 });
+type BadgeCellValue = z.infer<typeof BadgeCellSchema>;
 
 const ActionCellSchema = z.object({
   action: z.string(),
   variant: ButtonVariant.optional()
 });
+type ActionCellValue = z.infer<typeof ActionCellSchema>;
 
-export const TableCell = z.union([z.string(), z.number(), z.boolean(), BadgeCellSchema, ActionCellSchema]);
-export type TableCellValue = z.infer<typeof TableCell>;
+const ActionsCellSchema = z.object({
+  actions: z.array(ActionCellSchema).min(1)
+});
+type ActionsCellValue = z.infer<typeof ActionsCellSchema>;
+
+export type TableCellValue = string | number | boolean | BadgeCellValue | ActionCellValue | ActionsCellValue;
+export const TableCell: z.ZodType<TableCellValue> = z.union([
+  z.string(),
+  z.number(),
+  z.boolean(),
+  BadgeCellSchema,
+  ActionCellSchema,
+  ActionsCellSchema
+]);
 
 export const ScreenSchema = z.object({
   alert: AlertSchema,

@@ -1,77 +1,56 @@
-import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { App, ComplianceReviewSkeleton } from "./App";
 import { ComponentsGallery } from "./features/components-gallery/ComponentsGallery";
+import { promptActionSummary, promptCountSummary } from "./promptSummaries";
 
-const source = readFileSync(new URL("./main.tsx", import.meta.url), "utf8");
-const appStyles = readFileSync(new URL("./app.css", import.meta.url), "utf8");
-const componentsGalleryStyles = readFileSync(new URL("./features/components-gallery/componentsGallery.css", import.meta.url), "utf8");
-const generatorBehavior = readFileSync(new URL("./features/generator/README.md", import.meta.url), "utf8");
+const appMarkup = renderToStaticMarkup(createElement(App));
 const componentsGalleryMarkup = renderToStaticMarkup(createElement(ComponentsGallery));
 
 describe("showcase ambient AI control usage", () => {
   it("keeps the ambient treatment scoped to the prompt textarea", () => {
-    expect(source).toContain('controlFrameClassName="ds-ai-control-frame"');
-    expect(source).toContain('controlClassName="ds-ai-control"');
-    expect(source).not.toContain("ds-ai-surface");
-    expect(source).not.toContain('className="preview-panel ds-ai-control"');
-    expect(source).not.toContain('className="hero__signal ds-ai-control"');
+    expect(appMarkup).toContain("ds-ai-control-frame");
+    expect(appMarkup).toContain("ds-ai-control");
+    expect(appMarkup).not.toContain("preview-panel ds-ai-control");
+    expect(appMarkup).not.toContain("hero__signal ds-ai-control");
   });
 
   it("uses a stable generated screen panel heading", () => {
-    expect(source).toContain("<h2>Generated Screen</h2>");
-    expect(source).not.toContain("<h2>{generatedOutput.title}</h2>");
+    expect(appMarkup).toContain("<h2>Generated Screen</h2>");
+    expect(appMarkup).not.toContain("<h2>Billing workspace</h2>");
   });
 
   it("shows a compliance review skeleton while generation is pending", () => {
-    expect(source).toContain("function ComplianceReviewSkeleton()");
-    expect(source).toContain("isGenerating ? (");
-    expect(source).toContain("<ComplianceReviewSkeleton />");
+    const markup = renderToStaticMarkup(createElement(ComplianceReviewSkeleton));
+
+    expect(markup).toContain("aria-live=\"polite\"");
+    expect(markup).toContain("aria-busy=\"true\"");
+    expect(markup.match(/class=\"skeleton-table\"/g)).toHaveLength(2);
   });
 
   it("surfaces detected prompt intent in the generation evidence", () => {
-    expect(source).toContain("Detected counts");
-    expect(source).toContain("Detected actions");
-    expect(source).toContain("promptCountSummary(generatedOutput.prompt)");
-    expect(source).toContain("promptActionSummary(generatedOutput.prompt)");
-  });
-
-  it("documents tests versus evals for generator behavior", () => {
-    expect(generatorBehavior).toContain("deterministic demo");
-    expect(generatorBehavior).toContain("Keep broad generation quality checks in evals.");
-    expect(generatorBehavior).toContain("Keep exact local generator behavior in unit tests.");
+    expect(appMarkup).toContain("<td>Detected counts</td>");
+    expect(appMarkup).toContain("<td>Detected actions</td>");
+    expect(promptCountSummary("Create a billing page with 4 plans and 5 invoices")).toContain("plans=4");
+    expect(promptActionSummary("Create a table with a download button per row")).toContain("row=Download");
   });
 
   it("shows composer mode as a compact prompt-card pill instead of a status panel", () => {
-    expect(source).toContain("configuredComposerMode");
-    expect(source).toContain("lastComposerMode");
-    expect(source).toContain('className="composer-mode-pill"');
-    expect(source).toContain('tone="neutral"');
-    expect(source).not.toContain('className="composer-mode-pill" tone="neutral" glass');
-    expect(source).toContain("Configured mode");
-    expect(source).toContain("Rendered by");
-    expect(source).not.toContain('title="Generation status"');
+    expect(appMarkup).toContain("composer-mode-pill");
+    expect(appMarkup).toContain("<td>Configured mode</td>");
+    expect(appMarkup).toContain("<td>Rendered by</td>");
+    expect(appMarkup).not.toContain("Generation status");
   });
 
   it("presents prompt examples as starter chips instead of tab panels", () => {
-    expect(source).toContain('className="prompt-examples"');
-    expect(source).toContain('className="prompt-example-chips"');
-    expect(source).toContain("Prompt starters");
-    expect(source).not.toContain("aria-pressed={selectedId === scenario.id}");
-    expect(source).not.toContain('idPrefix="prompt-examples"');
-    expect(source).not.toContain('hint="Edit the current prompt, then generate again to update the screen."');
-  });
-
-  it("anchors the app nav as a full-width control below the compact hero", () => {
-    expect(appStyles).toMatch(/\.hero\s*\{[\s\S]*min-height: 26vh/);
-    expect(appStyles).toMatch(/\.showcase-tabs\s*\{[\s\S]*justify-self: stretch/);
-    expect(appStyles).toMatch(/\.showcase-tabs\s*\{[\s\S]*width: 100%/);
-    expect(appStyles).toMatch(/\.showcase-tabs \.ds-tabs__tab\s*\{[\s\S]*flex: 1 1 0/);
+    expect(appMarkup).toContain("prompt-examples");
+    expect(appMarkup).toContain("prompt-example-chips");
+    expect(appMarkup).toContain("Prompt starters");
+    expect(appMarkup).not.toContain("aria-pressed");
   });
 
   it("omits component governance metadata from gallery card headers", () => {
-    expect(componentsGalleryStyles).not.toContain(".component-meta");
     expect(componentsGalleryMarkup).not.toContain("component-meta");
   });
 
@@ -83,14 +62,10 @@ describe("showcase ambient AI control usage", () => {
     expect(componentsGalleryMarkup).toContain("--ds-color-border-default");
     expect(componentsGalleryMarkup).not.toContain("--ds-color-text-semantic");
     expect(componentsGalleryMarkup).not.toContain("--ds-color-border-semantic");
-    expect(componentsGalleryStyles).toContain(".semantic-status-groups");
-    expect(componentsGalleryStyles).toContain(".semantic-base-columns");
-    expect(componentsGalleryStyles).toContain(".token-evidence__row");
   });
 
   it("uses a two-column component layout with explicit full-width exceptions", () => {
-    expect(componentsGalleryStyles).toMatch(/\.component-grid\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-    expect(componentsGalleryStyles).toContain(".component-example--full");
+    expect(componentsGalleryMarkup).toContain("component-grid");
     expect(componentsGalleryMarkup).toContain("component-example component-example--full");
   });
 

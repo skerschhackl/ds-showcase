@@ -189,6 +189,39 @@
                         "action"
                       ],
                       "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "actions": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "action": {
+                                "type": "string"
+                              },
+                              "variant": {
+                                "type": "string",
+                                "enum": [
+                                  "primary",
+                                  "secondary",
+                                  "ghost"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "action"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "actions"
+                      ],
+                      "additionalProperties": false
                     }
                   ]
                 }
