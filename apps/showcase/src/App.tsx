@@ -56,9 +56,27 @@ export function App() {
     setIsGenerating(true);
 
     try {
-      const liveOutput = await composeWithLiveApi(input);
-      setGeneratedOutput(liveOutput ?? matchedOutput);
-      setLastComposerMode(liveOutput ? "Live composer" : "Local composer");
+      const liveResult = await composeWithLiveApi(input);
+
+      if (liveResult.output) {
+        setGeneratedOutput(liveResult.output);
+        setLastComposerMode("Live composer");
+        return;
+      }
+
+      setGeneratedOutput({
+        ...matchedOutput,
+        summary: "Live composer failed, so this is the local fallback output.",
+        compliance: [
+          {
+            label: "Live composer",
+            status: "Fail",
+            detail: liveResult.error
+          },
+          ...matchedOutput.compliance
+        ]
+      });
+      setLastComposerMode("Local composer");
     } finally {
       setIsGenerating(false);
     }

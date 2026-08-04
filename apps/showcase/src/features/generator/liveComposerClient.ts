@@ -9,11 +9,15 @@ import type { ComplianceItem, GeneratedOutput } from "../../showcaseTypes";
 import { headingFromPrompt, normalizeHeading, titleFromPrompt } from "./promptParsing";
 import { buildPromptFidelityChecks } from "./promptFidelity";
 
-export async function composeWithLiveApi(prompt: string): Promise<GeneratedOutput | undefined> {
+export type LiveComposerResult =
+  | { output: GeneratedOutput; error?: undefined }
+  | { output?: undefined; error: string };
+
+export async function composeWithLiveApi(prompt: string): Promise<LiveComposerResult> {
   const endpoint = import.meta.env.VITE_AI_COMPOSER_URL as string | undefined;
 
   if (!endpoint) {
-    return undefined;
+    return { error: "Live composer URL is not configured." };
   }
 
   try {
@@ -27,7 +31,12 @@ export async function composeWithLiveApi(prompt: string): Promise<GeneratedOutpu
     });
 
     if (!response.ok) {
-      return undefined;
+      const errorPayload = await response.json().catch(() => undefined);
+      const detail = errorPayload && typeof errorPayload === "object" && "error" in errorPayload
+        ? String(errorPayload.error)
+        : `Request failed with HTTP ${response.status}.`;
+
+      return { error: detail };
     }
 
     const payload = await response.json();
@@ -61,20 +70,24 @@ export async function composeWithLiveApi(prompt: string): Promise<GeneratedOutpu
     ];
 
     return {
-      label: hasGaps ? "Needs System Review" : "Live Screen",
-      title: outputTitle,
-      summary: repairedResponse
-        ? `${livePayload.summary} Some model fields were repaired before rendering.`
-        : livePayload.summary,
-      prompt,
-      compliance: [...baseCompliance, ...buildPromptFidelityChecks(prompt, screen)],
-      approvedComponents: liveComponents,
-      unsupportedComponents,
-      fingerprint: promptFingerprint(prompt),
-      screen
+      output: {
+        label: hasGaps ? "Needs System Review" : "Live Screen",
+        title: outputTitle,
+        summary: repairedResponse
+          ? `${livePayload.summary} Some model fields were repaired before rendering.`
+          : livePayload.summary,
+        prompt,
+        compliance: [...baseCompliance, ...buildPromptFidelityChecks(prompt, screen)],
+        approvedComponents: liveComponents,
+        unsupportedComponents,
+        fingerprint: promptFingerprint(prompt),
+        screen
+      }
     };
-  } catch {
-    return undefined;
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Live composer request failed."
+    };
   }
 }
 

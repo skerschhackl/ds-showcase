@@ -14,16 +14,18 @@ const composerRoot = path.resolve(path.dirname(currentFile), "..");
 const repoRoot = path.resolve(composerRoot, "..", "..");
 
 export function createComposerConfig(env = process.env) {
+  const provider = env.AI_PROVIDER ?? "openai";
+
   return {
     port: Number(env.PORT ?? 8787),
     host: env.HOST ?? "127.0.0.1",
-    provider: env.AI_PROVIDER ?? "openai",
+    provider,
     openAiModel: env.OPENAI_MODEL ?? "gpt-5.4-mini",
     ollamaModel: env.OLLAMA_MODEL ?? "qwen2.5:7b",
     ollamaUrl: env.OLLAMA_URL ?? "http://127.0.0.1:11434",
     maxRequestBodyBytes: Number(env.MAX_REQUEST_BODY_BYTES ?? 64 * 1024),
     requestBodyTimeoutMs: Number(env.REQUEST_BODY_TIMEOUT_MS ?? 5000),
-    modelRequestTimeoutMs: Number(env.MODEL_REQUEST_TIMEOUT_MS ?? 45000),
+    modelRequestTimeoutMs: Number(env.MODEL_REQUEST_TIMEOUT_MS ?? (provider === "ollama" ? 120000 : 45000)),
     corsOrigin: env.CORS_ORIGIN ?? "http://127.0.0.1:5173",
     openAiApiKey: env.OPENAI_API_KEY,
     ollamaTemperature: Number(env.OLLAMA_TEMPERATURE ?? 0.2)
@@ -85,31 +87,39 @@ export async function handleComposerRequest(request, response, { composerContext
 }
 
 async function handleGenerate(request, response, composerContext, config, fetchJson) {
-  const body = await readJsonBody(request, config);
+  try {
+    const body = await readJsonBody(request, config);
 
-  if (!body.ok) {
-    sendJson(response, body.status, { error: body.error });
-    return;
-  }
+    if (!body.ok) {
+      sendJson(response, body.status, { error: body.error });
+      return;
+    }
 
-  const parsedRequest = parseGenerateRequest(body.data);
+    const parsedRequest = parseGenerateRequest(body.data);
 
-  if (!parsedRequest.success) {
-    sendJson(response, 400, {
-      error: "Invalid generate request",
-      diagnostics: parsedRequest.error.issues.map(formatZodIssue)
+    if (!parsedRequest.success) {
+      sendJson(response, 400, {
+        error: "Invalid generate request",
+        diagnostics: parsedRequest.error.issues.map(formatZodIssue)
+      });
+      return;
+    }
+
+    const { prompt, allowedComponents: requestedComponents } = parsedRequest.data;
+
+    if (config.provider === "ollama") {
+      await generateWithOllama(response, composerContext, config, fetchJson, prompt, requestedComponents);
+      return;
+    }
+
+    await generateWithOpenAI(response, composerContext, config, fetchJson, prompt, requestedComponents);
+  } catch (error) {
+    sendJson(response, 500, {
+      error: "Composer request failed",
+      details: error instanceof Error ? error.message : String(error)
     });
     return;
   }
-
-  const { prompt, allowedComponents: requestedComponents } = parsedRequest.data;
-
-  if (config.provider === "ollama") {
-    await generateWithOllama(response, composerContext, config, fetchJson, prompt, requestedComponents);
-    return;
-  }
-
-  await generateWithOpenAI(response, composerContext, config, fetchJson, prompt, requestedComponents);
 }
 
 async function generateWithOpenAI(response, composerContext, config, fetchJson, prompt, requestedComponents) {
