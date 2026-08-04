@@ -5,6 +5,7 @@ export type SelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "aria-de
   label: string;
   options: Array<{ label: string; value: string }>;
   hint?: string;
+  /** Shows validation copy and wires aria-invalid plus aria-describedby. */
   error?: string;
 };
 

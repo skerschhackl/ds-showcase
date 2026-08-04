@@ -4,7 +4,9 @@ import { Spinner } from "../Spinner";
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "ghost";
   size?: "sm" | "md";
+  /** Disables interaction and exposes busy state while async work is pending. */
   loading?: boolean;
+  /** Accessible status text for the spinner; describe the pending action. */
   loadingLabel?: string;
 };
 

@@ -4,6 +4,7 @@ import { Field } from "../Field/Field";
 export type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "aria-describedby" | "aria-invalid"> & {
   label: string;
   hint?: string;
+  /** Shows validation copy and wires aria-invalid plus aria-describedby. */
   error?: string;
 };
 

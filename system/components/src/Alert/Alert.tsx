@@ -10,6 +10,7 @@ export function Alert({
   tone?: Tone;
   title: string;
   children: ReactNode;
+  /** Sets the rendered heading tag so the alert fits the surrounding page hierarchy. */
   headingLevel?: 2 | 3 | 4 | 5 | 6;
 }) {
   const generatedId = useId();

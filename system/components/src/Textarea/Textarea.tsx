@@ -4,6 +4,7 @@ import { Field } from "../Field/Field";
 export type TextareaProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "aria-describedby" | "aria-invalid"> & {
   label: string;
   hint?: string;
+  /** Shows validation copy and wires aria-invalid plus aria-describedby. */
   error?: string;
   controlClassName?: string;
   controlFrameClassName?: string;

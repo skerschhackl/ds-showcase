@@ -1,6 +1,6 @@
 # AI Usage Guide
 
-This repo separates AI guidance into three layers:
+This repo separates AI guidance into four layers:
 
 - `specs/`: AI-readable design system rules.
 - `ai/skills`: reusable AI workflows.
@@ -32,6 +32,12 @@ Start with `specs/README.md` when asking an AI agent to use the design system. T
 Generated UI is not accepted because it looks plausible. It is accepted when it follows the component model, token system, accessibility requirements, and compliance workflow.
 
 For generated form fields, validation states must be visible and programmatic: use component `error` props so `aria-invalid` is set, error copy is connected, and the control uses the approved danger-border treatment.
+
+## Design System Contract Review
+
+For contract drift or AI-readiness reviews, use `ai/skills/compliance-review.md`.
+
+The key principle: use the narrowest durable contract for each rule. Prefer TypeScript, Zod, JSON Schema, tests, and evals when practical. Keep `*.ai.md` focused on usage and generation behavior, and add TypeScript comments only when names or types hide important behavior, accessibility wiring, semantic intent, or constraints.
 
 ## Eval And Composer Testing Notes
 

@@ -24,10 +24,15 @@ When adding or changing a component:
 4. Update the relevant file in `specs/atoms`, `specs/molecules`, or `specs/organisms`.
 5. Update eval cases if the component affects generation behavior.
 
+Keep comments sparse. Prefer prop names, TypeScript types, Zod schemas, tests, and evals for enforceable rules. Add JSDoc only when the prop name and type do not reveal important behavior, accessibility wiring, semantic intent, or constraints.
+
+Before adding a complex composed component such as a modal, drawer, dropdown, toast, date picker, or wizard, define the composition contract first: required regions, allowed children, accessible naming, focus and dismissal behavior, invalid configurations, and generated-UI fallback behavior.
+
 ## Review Questions
 
 - Does this component encode a repeated product behavior?
 - Does it clarify accessibility or interaction expectations?
 - Does it reduce repeated custom UI?
 - Does it use existing tokens?
+- Does it define composition rules clearly enough that an agent does not need to infer them?
 - Can AI identify when to use it from the specs and component contract?
