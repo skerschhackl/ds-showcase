@@ -9,16 +9,25 @@ const context = {
 
 describe("composer server boundary", () => {
   it("reports health with CORS metadata", async () => {
-    const response = await dispatch({ method: "GET", url: "/health" });
+    const response = await dispatch({ method: "GET", url: "/health", origin: "http://localhost:5173" });
 
     expect(response.status).toBe(200);
-    expect(response.headers["Access-Control-Allow-Origin"]).toBe("http://127.0.0.1:5173");
+    expect(response.headers["Access-Control-Allow-Origin"]).toBe("http://localhost:5173");
+    expect(response.headers.Vary).toBe("Origin");
     expect(response.body).toMatchObject({
       ok: true,
       provider: "openai",
       model: "gpt-5.4-mini",
       mode: "missing-api-key"
     });
+  });
+
+  it("allows both localhost and 127.0.0.1 showcase origins by default", async () => {
+    const localhost = await dispatch({ method: "OPTIONS", url: "/generate", origin: "http://localhost:5173" });
+    const loopback = await dispatch({ method: "OPTIONS", url: "/generate", origin: "http://127.0.0.1:5173" });
+
+    expect(localhost.headers["Access-Control-Allow-Origin"]).toBe("http://localhost:5173");
+    expect(loopback.headers["Access-Control-Allow-Origin"]).toBe("http://127.0.0.1:5173");
   });
 
   it("handles preflight and unknown routes", async () => {
@@ -96,7 +105,7 @@ describe("composer server boundary", () => {
     expect(malformed.body.error).toBe("OpenAI response was not valid JSON");
   });
 
-  it("normalizes partial model output and surfaces diagnostics", async () => {
+  it("rejects partial or old v1 model output with diagnostics", async () => {
     const response = await dispatch({
       body: { prompt: "Create a team management screen with invite modal" },
       env: { OPENAI_API_KEY: "test-key" },
@@ -110,11 +119,10 @@ describe("composer server boundary", () => {
       })
     });
 
-    expect(response.status).toBe(200);
-    expect(response.body.components).toEqual(["Alert", "Table"]);
-    expect(response.body.unsupported).toEqual(["Modal"]);
-    expect(response.body.screen.table.columns).toEqual(["Item", "Status", "Action"]);
+    expect(response.status).toBe(502);
+    expect(response.body.error).toBe("Model response did not match the v2 page schema");
     expect(response.body.diagnostics.length).toBeGreaterThan(0);
+    expect(response.body.output.screen).toBeDefined();
   });
 
   it("preserves explicit prompt headings over provider titles", async () => {
@@ -145,8 +153,9 @@ describe("composer server boundary", () => {
     });
 
     expect(response.status).toBe(200);
-    expect(providerBody.input[0].content).toContain("Allowed components: Table, Button.");
+    expect(providerBody.input[0].content).toContain("Allowed components:");
     expect(providerBody.input[0].content).not.toContain("Chart");
+    expect(providerBody.input[0].content).not.toContain("# Alert");
   });
 
   it("instructs live providers to preserve exact headings and requested button labels", async () => {
@@ -165,12 +174,64 @@ describe("composer server boundary", () => {
 
     expect(response.status).toBe(200);
     expect(providerBody.input[0].content).toContain("set the top-level title to that exact heading text");
-    expect(providerBody.input[0].content).toContain("download all entries");
-    expect(providerBody.input[0].content).toContain("export all data shown");
+    expect(providerBody.input[0].content).toContain("section actions");
+    expect(providerBody.input[0].content).toContain("Do not put section types");
     expect(providerBody.input[0].content).toContain('The only valid table action-cell object shape is { "action": "Label", "variant": "secondary" }');
     expect(providerBody.input[0].content).toContain("do not emit JSX-like Button objects");
     expect(providerBody.input[0].content).not.toContain("Button object in the relevant table row");
     expect(providerBody.input[1].content).toContain("my bills");
+    expect(providerBody.input[1].content).toContain("download all entries");
+  });
+
+  it("accepts renderable page output when component evidence contains section type names", async () => {
+    const response = await dispatch({
+      body: { prompt: "Generate a catalog landing page with search and featured items" },
+      env: { OPENAI_API_KEY: "test-key" },
+      fetchJson: async () => okModelResponse({
+        title: "Catalog Landing Page",
+        summary: "A catalog experience with product listings and search.",
+        components: ["Card", "Input", "Button", "cardGrid", "cta"],
+        unsupported: [],
+        page: {
+          sections: [
+            {
+              type: "hero",
+              title: "Explore the catalog",
+              body: "Browse featured items and find the right product quickly.",
+              actions: []
+            },
+            {
+              type: "form",
+              fields: [{ label: "Search", kind: "input" }],
+              actions: [{ label: "Search", variant: "primary" }]
+            },
+            {
+              type: "cardGrid",
+              title: "Featured items",
+              cards: [
+                {
+                  title: "Starter bundle",
+                  body: "A curated option for new customers.",
+                  badge: { text: "Featured", tone: "primary" },
+                  action: { label: "View details", variant: "secondary" }
+                }
+              ]
+            },
+            {
+              type: "cta",
+              title: "Browse all items",
+              body: "",
+              actions: [{ label: "Open catalog", variant: "primary" }]
+            }
+          ]
+        }
+      })
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.components).toEqual(["Card", "Input", "Button"]);
+    expect(response.body.page.sections[1].type).toBe("form");
+    expect(response.body.page.sections[1].title).toBeUndefined();
   });
 
   it("supports Ollama provider failures through the same boundary", async () => {
@@ -191,9 +252,10 @@ async function dispatch({
   body,
   env = {},
   fetchJson = async () => okModelResponse(validModelOutput()),
-  endBody = true
+  endBody = true,
+  origin
 } = {}) {
-  const request = new MockRequest(method, url);
+  const request = new MockRequest(method, url, origin);
   const response = new MockResponse();
   const done = response.done;
 
@@ -218,10 +280,11 @@ async function dispatch({
 }
 
 class MockRequest extends EventEmitter {
-  constructor(method, url) {
+  constructor(method, url, origin) {
     super();
     this.method = method;
     this.url = url;
+    this.headers = origin ? { origin } : {};
     this.destroyed = false;
   }
 
@@ -269,18 +332,35 @@ function validModelOutput() {
   return {
     title: "Billing Settings",
     summary: "Manage billing settings.",
-    components: ["Alert", "Card", "Input", "Select", "Table", "Badge", "Button", "Textarea"],
+    components: ["Alert", "Card", "Input", "Select", "Table", "Badge", "Button"],
     unsupported: [],
-    screen: {
-      alert: { tone: "success", title: "Ready", body: "Billing controls are ready." },
-      metrics: [{ label: "Plan", value: "Growth" }],
-      fields: [{ label: "Billing email", kind: "input" }],
-      table: {
-        columns: ["Invoice", "Status"],
-        rows: [["INV-1", { text: "Paid", tone: "success" }]]
-      },
-      primaryAction: "Save billing",
-      secondaryAction: "Export invoices"
+    page: {
+      sections: [
+        {
+          type: "pageHeader",
+          title: "Billing Settings",
+          body: "Manage billing settings.",
+          actions: [{ label: "Save billing", variant: "primary" }]
+        },
+        {
+          type: "form",
+          title: "Billing contact",
+          fields: [{ label: "Billing email", kind: "input" }],
+          actions: [{ label: "Save billing", variant: "primary" }]
+        },
+        {
+          type: "table",
+          title: "Invoices",
+          columns: ["Invoice", "Status"],
+          rows: [["INV-1", { text: "Paid", tone: "success" }]]
+        },
+        {
+          type: "alert",
+          tone: "success",
+          title: "Ready",
+          body: "Billing controls are ready."
+        }
+      ]
     }
   };
 }

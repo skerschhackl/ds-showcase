@@ -1,5 +1,20 @@
+import { useState } from "react";
 import { Wand2 } from "lucide-react";
-import { Alert, Badge, Button, Card, Input, Select, Table, Textarea } from "@ds/components";
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Input,
+  Select,
+  TabPanel,
+  Table,
+  Tabs,
+  Textarea,
+  getDefaultTabId,
+  getDefaultTabPanelId
+} from "@ds/components";
+import type { PageAction, PageField, PageSection } from "@ds/ai-contracts";
 import type { GeneratedScreen, TableCell } from "../../liveComposer";
 import type { GeneratedOutput } from "../../showcaseTypes";
 
@@ -48,13 +63,8 @@ export function CustomGeneratedScreen({ output }: { output: GeneratedOutput }) {
   const approvedComponents = output.approvedComponents ?? ["Card", "Alert", "Button"];
   const unsupportedComponents = output.unsupportedComponents ?? [];
   const hasGaps = unsupportedComponents.length > 0;
-  const { screen } = output;
-  const metrics = Array.isArray(screen.metrics) ? screen.metrics : [];
-  const fields = Array.isArray(screen.fields) ? screen.fields : [];
-  const tableColumns = Array.isArray(screen.table?.columns) ? screen.table.columns : ["Item", "Status", "Action"];
-  const tableRows = Array.isArray(screen.table?.rows) ? screen.table.rows : [];
+  const sections = Array.isArray(output.page?.sections) ? output.page.sections : [];
   const promptFidelityWarnings = output.compliance.filter((item) => item.label === "Prompt fidelity" && item.status !== "Pass");
-  const actions = previewActionsForScreen(screen);
 
   return (
     <div className="screen-stack">
@@ -79,6 +89,183 @@ export function CustomGeneratedScreen({ output }: { output: GeneratedOutput }) {
         </Alert>
       ))}
 
+      {sections.length ? (
+        <GeneratedPage sections={sections} />
+      ) : (
+        <LegacyGeneratedSurface output={output} />
+      )}
+    </div>
+  );
+}
+
+function GeneratedPage({ sections }: { sections: PageSection[] }) {
+  return (
+    <div className="generated-page" aria-label="Generated page composition">
+      {sections.map((section, index) => (
+        <GeneratedPageSection key={`${section.type}-${index}`} section={section} index={index} />
+      ))}
+    </div>
+  );
+}
+
+function GeneratedPageSection({ section, index }: { section: PageSection; index: number }) {
+  if (section.type === "hero") {
+    return (
+      <section className="page-section page-section--hero">
+        {section.eyebrow ? <span className="metric-label">{section.eyebrow}</span> : null}
+        <h3>{section.title}</h3>
+        <p>{section.body}</p>
+        <PageActions actions={section.actions} />
+      </section>
+    );
+  }
+
+  if (section.type === "pageHeader") {
+    return (
+      <section className="page-section page-section--header">
+        <div>
+          {section.eyebrow ? <span className="metric-label">{section.eyebrow}</span> : null}
+          <h3>{section.title}</h3>
+          {section.body ? <p>{section.body}</p> : null}
+        </div>
+        <PageActions actions={section.actions} />
+      </section>
+    );
+  }
+
+  if (section.type === "form") {
+    return (
+      <section className="page-section">
+        <SectionHeading title={section.title} body={section.body} />
+        <div className="form-grid">
+          {section.fields.map((field) => <GeneratedField key={field.label} field={field} />)}
+        </div>
+        <PageActions actions={section.actions} />
+      </section>
+    );
+  }
+
+  if (section.type === "cardGrid") {
+    return (
+      <section className="page-section">
+        <SectionHeading title={section.title} body={section.body} />
+        <div className="page-card-grid">
+          {section.cards.map((card) => (
+            <Card key={card.title} className="page-card">
+              {card.badge ? <Badge tone={card.badge.tone}>{card.badge.text}</Badge> : null}
+              <h4>{card.title}</h4>
+              <p>{card.body}</p>
+              {card.action ? <Button variant={card.action.variant} type="button">{card.action.label}</Button> : null}
+            </Card>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (section.type === "stats") {
+    return (
+      <section className="page-section">
+        {section.title ? <SectionHeading title={section.title} /> : null}
+        <div className="generated-grid">
+          {section.metrics.map((metric) => (
+            <Card key={metric.label}>
+              <span className="metric-label">{metric.label}</span>
+              <strong className="metric-value metric-value--small">{metric.value}</strong>
+              {typeof metric.progress === "number" ? (
+                <span className="metric-bar"><span style={{ width: `${metric.progress}%` }} /></span>
+              ) : null}
+            </Card>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (section.type === "table") {
+    return (
+      <section className="page-section">
+        <SectionHeading title={section.title} body={section.body} />
+        <Table
+          columns={section.columns}
+          rows={section.rows.map((row) => row.map((cell) => renderTableCell(cell)))}
+        />
+      </section>
+    );
+  }
+
+  if (section.type === "alert") {
+    return (
+      <section className="page-section page-section--flush">
+        <Alert tone={section.tone} title={section.title}>{section.body}</Alert>
+      </section>
+    );
+  }
+
+  if (section.type === "cta") {
+    return (
+      <section className="page-section page-section--cta">
+        <h3>{section.title}</h3>
+        <p>{section.body}</p>
+        <PageActions actions={section.actions} />
+      </section>
+    );
+  }
+
+  if (section.type === "tabs") {
+    return <GeneratedTabsSection section={section} index={index} />;
+  }
+
+  return (
+    <section className="page-section">
+      <Alert tone="warning" title="Unknown section type">
+        This section could not be rendered safely.
+      </Alert>
+    </section>
+  );
+}
+
+function GeneratedTabsSection({ section, index }: { section: Extract<PageSection, { type: "tabs" }>; index: number }) {
+  const idPrefix = `generated-tabs-${index}`;
+  const [active, setActive] = useState(section.tabs[0].id);
+
+  return (
+    <section className="page-section">
+      {section.title ? <SectionHeading title={section.title} /> : null}
+      <Tabs
+        active={active}
+        ariaLabel={section.title ?? "Generated tabs"}
+        idPrefix={idPrefix}
+        onChange={setActive}
+        tabs={section.tabs.map((tab) => ({ id: tab.id, label: tab.label }))}
+      />
+      {section.tabs.map((tab) => (
+        <TabPanel
+          key={tab.id}
+          id={getDefaultTabPanelId(idPrefix, tab.id)}
+          active={tab.id === active}
+          labelledBy={getDefaultTabId(idPrefix, tab.id)}
+        >
+          <div className="page-tab-panel">
+            <h4>{tab.title}</h4>
+            <p>{tab.body}</p>
+          </div>
+        </TabPanel>
+      ))}
+    </section>
+  );
+}
+
+function LegacyGeneratedSurface({ output }: { output: GeneratedOutput }) {
+  const { screen } = output;
+  const metrics = Array.isArray(screen.metrics) ? screen.metrics : [];
+  const fields = Array.isArray(screen.fields) ? screen.fields : [];
+  const tableColumns = Array.isArray(screen.table?.columns) ? screen.table.columns : ["Item", "Status", "Action"];
+  const tableRows = Array.isArray(screen.table?.rows) ? screen.table.rows : [];
+  const actions = previewActionsForScreen(screen);
+
+  return (
+    <>
       <div className="generated-surface">
         <div className="generated-surface__header generated-surface__header--plain">
           <div>
@@ -145,6 +332,57 @@ export function CustomGeneratedScreen({ output }: { output: GeneratedOutput }) {
           ))}
         </div>
       ) : null}
+    </>
+  );
+}
+
+function SectionHeading({ title, body }: { title?: string; body?: string }) {
+  if (!title && !body) {
+    return null;
+  }
+
+  return (
+    <div className="section-heading">
+      {title ? <h3>{title}</h3> : null}
+      {body ? <p>{body}</p> : null}
+    </div>
+  );
+}
+
+function GeneratedField({ field }: { field: PageField }) {
+  if (field.kind === "textarea") {
+    return <Textarea label={field.label} placeholder={field.placeholder} rows={field.rows ?? 4} />;
+  }
+
+  if (field.kind === "select") {
+    return (
+      <Select
+        label={field.label}
+        defaultValue={field.options?.[0]?.toLowerCase().replace(/\s+/g, "-") ?? "option"}
+        options={(field.options ?? ["Option"]).map((option) => ({
+          label: option,
+          value: option.toLowerCase().replace(/\s+/g, "-")
+        }))}
+      />
+    );
+  }
+
+  return <Input label={field.label} placeholder={field.placeholder} />;
+}
+
+function PageActions({ actions }: { actions: PageAction[] }) {
+  if (!actions.length) {
+    return null;
+  }
+
+  return (
+    <div className="button-row page-actions">
+      {actions.map((action, index) => (
+        <Button key={action.label} variant={action.variant} type="button">
+          {index === 0 && action.variant === "primary" ? <Wand2 size={16} aria-hidden="true" /> : null}
+          {action.label}
+        </Button>
+      ))}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import type { GeneratedPage } from "@ds/ai-contracts";
 import type { GeneratedScreen, KnownScreenKind } from "./liveComposer";
 
 export type ScenarioId = KnownScreenKind;
@@ -22,8 +23,29 @@ export type GeneratedOutput = {
   approvedComponents?: string[];
   unsupportedComponents?: string[];
   fingerprint: string;
+  page?: GeneratedPage;
   screen: GeneratedScreen;
 };
+
+export type ComposerMode = "Live composer" | "Local composer";
+
+export type GenerationSuccess = {
+  status: "success";
+  mode: ComposerMode;
+  output: GeneratedOutput;
+};
+
+export type GenerationFailure = {
+  status: "failed";
+  mode: "Live composer";
+  prompt: string;
+  fingerprint: string;
+  error: string;
+  diagnostics?: string[];
+  rawOutput?: unknown;
+};
+
+export type GenerationResult = GenerationSuccess | GenerationFailure;
 
 export type AppView = "generator" | "components";
 export type SemanticColor = { label: string; token: string; value: string };

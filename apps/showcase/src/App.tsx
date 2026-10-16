@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { ClipboardCheck, Play, RotateCcw, Search, Sparkles } from "lucide-react";
 import {
+  Alert,
   Badge,
   Button,
   Card,
@@ -20,7 +21,15 @@ import {
 } from "./generatedOutput";
 import { promptActionSummary, promptCountSummary } from "./promptSummaries";
 import { heroContent, scenarios } from "./scenarios";
-import type { AppView, ComplianceItem, GeneratedOutput, ScenarioId } from "./showcaseTypes";
+import type {
+  AppView,
+  ComplianceItem,
+  ComposerMode,
+  GeneratedOutput,
+  GenerationFailure,
+  GenerationResult,
+  ScenarioId
+} from "./showcaseTypes";
 
 const showcaseViewTabs = [
   { id: "generator", label: "Generator" },
@@ -30,11 +39,10 @@ const showcaseViewTabs = [
 export function App() {
   const [view, setView] = useState<AppView>("generator");
   const [selectedId, setSelectedId] = useState<ScenarioId>("billing");
-  const [generatedOutput, setGeneratedOutput] = useState<GeneratedOutput>(() =>
-    buildCustomOutput(scenarios[0].prompt)
+  const [generationResult, setGenerationResult] = useState<GenerationResult>(() =>
+    buildGenerationSuccess("Local composer", buildCustomOutput(scenarios[0].prompt))
   );
   const [isGenerating, setIsGenerating] = useState(false);
-  const [lastComposerMode, setLastComposerMode] = useState<"Live composer" | "Local composer">("Local composer");
   const [input, setInput] = useState(scenarios[0].prompt);
   const activeHero = heroContent[view];
   const selectedScenario = scenarios.find((scenario) => scenario.id === selectedId) ?? scenarios[0];
@@ -56,27 +64,19 @@ export function App() {
     setIsGenerating(true);
 
     try {
-      const liveResult = await composeWithLiveApi(input);
-
-      if (liveResult.output) {
-        setGeneratedOutput(liveResult.output);
-        setLastComposerMode("Live composer");
+      if (configuredComposerMode === "Local composer") {
+        setGenerationResult(buildGenerationSuccess("Local composer", matchedOutput));
         return;
       }
 
-      setGeneratedOutput({
-        ...matchedOutput,
-        summary: "Live composer failed, so this is the local fallback output.",
-        compliance: [
-          {
-            label: "Live composer",
-            status: "Fail",
-            detail: liveResult.error
-          },
-          ...matchedOutput.compliance
-        ]
-      });
-      setLastComposerMode("Local composer");
+      const liveResult = await composeWithLiveApi(input);
+
+      if (liveResult.output) {
+        setGenerationResult(buildGenerationSuccess("Live composer", liveResult.output));
+        return;
+      }
+
+      setGenerationResult(buildGenerationFailure(input, liveResult.error, liveResult.diagnostics, liveResult.rawOutput));
     } finally {
       setIsGenerating(false);
     }
@@ -178,10 +178,16 @@ export function App() {
                 <Search aria-hidden="true" size={20} />
                 <div>
                   <h2>Generated Screen</h2>
-                  <p>{isGenerating ? "Generating a governed screen from your prompt..." : generatedOutput.summary}</p>
+                  <p>{previewSummary(isGenerating, generationResult)}</p>
                 </div>
               </div>
-              {isGenerating ? <GeneratedScreenSkeleton /> : <CustomGeneratedScreen output={generatedOutput} />}
+              {isGenerating ? (
+                <GeneratedScreenSkeleton />
+              ) : generationResult.status === "success" ? (
+                <CustomGeneratedScreen output={generationResult.output} />
+              ) : (
+                <GenerationFailurePanel failure={generationResult} />
+              )}
             </Card>
 
             <Card className="review-panel">
@@ -199,24 +205,12 @@ export function App() {
                   <Table
                     caption="Generation evidence"
                     columns={["Signal", "Value"]}
-                    rows={[
-                      ["Configured mode", configuredComposerMode],
-                      ["Rendered by", lastComposerMode],
-                      ["Prompt", generatedOutput.fingerprint],
-                      ["Detected counts", promptCountSummary(generatedOutput.prompt)],
-                      ["Detected actions", promptActionSummary(generatedOutput.prompt)],
-                      ["Components", (generatedOutput.approvedComponents ?? []).join(", ")],
-                      ["Gaps", generatedOutput.unsupportedComponents?.length ? generatedOutput.unsupportedComponents.join(", ") : "None"]
-                    ]}
+                    rows={generationEvidenceRows(generationResult, configuredComposerMode)}
                   />
                   <Table
                     caption="Compliance checks"
                     columns={["Check", "Status", "Detail"]}
-                    rows={generatedOutput.compliance.map((item) => [
-                      item.label,
-                      <Badge tone={statusTone(item.status)}>{item.status}</Badge>,
-                      item.detail
-                    ])}
+                    rows={complianceRows(generationResult)}
                   />
                 </>
               )}
@@ -233,6 +227,135 @@ export function App() {
       </TabPanel>
     </main>
   );
+}
+
+function buildGenerationSuccess(mode: ComposerMode, output: GeneratedOutput): GenerationResult {
+  return { status: "success", mode, output };
+}
+
+function buildGenerationFailure(
+  prompt: string,
+  error: string,
+  diagnostics?: string[],
+  rawOutput?: unknown
+): GenerationFailure {
+  return {
+    status: "failed",
+    mode: "Live composer",
+    prompt,
+    fingerprint: promptFingerprint(prompt),
+    error,
+    diagnostics,
+    rawOutput
+  };
+}
+
+function previewSummary(isGenerating: boolean, result: GenerationResult) {
+  if (isGenerating) {
+    return "Generating a governed screen from your prompt...";
+  }
+
+  if (result.status === "failed") {
+    return "Live composer failed. No local fallback was rendered.";
+  }
+
+  return result.output.summary;
+}
+
+function generationEvidenceRows(result: GenerationResult, configuredComposerMode: ComposerMode) {
+  if (result.status === "failed") {
+    return [
+      ["Configured mode", configuredComposerMode],
+      ["Rendered by", "None"],
+      ["Prompt", result.fingerprint],
+      ["Detected counts", promptCountSummary(result.prompt)],
+      ["Detected actions", promptActionSummary(result.prompt)],
+      ["Components", "None"],
+      ["Gaps", "Live output did not pass validation"]
+    ];
+  }
+
+  return [
+    ["Configured mode", configuredComposerMode],
+    ["Rendered by", result.mode],
+    ["Prompt", result.output.fingerprint],
+    ["Detected counts", promptCountSummary(result.output.prompt)],
+    ["Detected actions", promptActionSummary(result.output.prompt)],
+    ["Components", (result.output.approvedComponents ?? []).join(", ")],
+    ["Gaps", result.output.unsupportedComponents?.length ? result.output.unsupportedComponents.join(", ") : "None"]
+  ];
+}
+
+function complianceRows(result: GenerationResult) {
+  if (result.status === "failed") {
+    return [
+      [
+        "Live composer",
+        <Badge tone="danger">Fail</Badge>,
+        result.error
+      ],
+      [
+        "Fallback",
+        <Badge tone="success">Pass</Badge>,
+        "No local/demo output was rendered over the failed live response."
+      ]
+    ];
+  }
+
+  return result.output.compliance.map((item) => [
+    item.label,
+    <Badge tone={statusTone(item.status)}>{item.status}</Badge>,
+    item.detail
+  ]);
+}
+
+export function GenerationFailurePanel({ failure }: { failure: GenerationFailure }) {
+  const rawOutput = failure.rawOutput === undefined ? undefined : JSON.stringify(failure.rawOutput, null, 2);
+
+  return (
+    <div className="screen-stack">
+      <div className="generation-detail generation-detail--failed">
+        <div>
+          <span className="metric-label">Prompt trace</span>
+          <p>{failure.prompt}</p>
+        </div>
+        <div>
+          <span className="metric-label">Rendered output</span>
+          <div className="badge-row">
+            <Badge tone="danger">None</Badge>
+            <Badge tone="neutral">Live composer failed</Badge>
+          </div>
+        </div>
+      </div>
+
+      <Alert tone="danger" title="Live composer failed">
+        {failure.error}
+      </Alert>
+
+      {failure.diagnostics?.length ? (
+        <section className="page-section">
+          <h3>Validation diagnostics</h3>
+          <ul className="diagnostic-list">
+            {failure.diagnostics.map((diagnostic, index) => (
+              <li key={`${diagnostic}-${index}`}>{diagnostic}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {rawOutput ? (
+        <section className="page-section">
+          <h3>Raw model output</h3>
+          <pre className="raw-output">{rawOutput}</pre>
+        </section>
+      ) : null}
+    </div>
+  );
+}
+
+function promptFingerprint(prompt: string) {
+  const hash = Array.from(prompt).reduce((total, char) => (total * 31 + char.charCodeAt(0)) % 9973, 17);
+  return `prompt-${hash.toString().padStart(4, "0")}`;
 }
 
 function statusTone(status: ComplianceItem["status"]) {
