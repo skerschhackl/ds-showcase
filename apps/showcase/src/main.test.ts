@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { App, ComplianceReviewSkeleton } from "./App";
+import { App, ComplianceReviewSkeleton, GenerationFailurePanel } from "./App";
 import { ComponentsGallery } from "./features/components-gallery/ComponentsGallery";
 import { promptActionSummary, promptCountSummary } from "./promptSummaries";
 
@@ -27,6 +27,27 @@ describe("showcase ambient AI control usage", () => {
     expect(markup).toContain("aria-live=\"polite\"");
     expect(markup).toContain("aria-busy=\"true\"");
     expect(markup.match(/class=\"skeleton-table\"/g)).toHaveLength(2);
+  });
+
+  it("renders live composer failures without substituting local output", () => {
+    const markup = renderToStaticMarkup(createElement(GenerationFailurePanel, {
+      failure: {
+        status: "failed",
+        mode: "Live composer",
+        prompt: "Generate a flight booking landing page",
+        fingerprint: "prompt-test",
+        error: "Live composer returned invalid v2 output.",
+        diagnostics: ["page.sections: Required"],
+        rawOutput: { screen: { kind: "workflow" } }
+      }
+    }));
+
+    expect(markup).toContain("Live composer failed");
+    expect(markup).toContain("Rendered output");
+    expect(markup).toContain("None");
+    expect(markup).toContain("page.sections: Required");
+    expect(markup).not.toContain("Custom Screen");
+    expect(markup).not.toContain("A prompt-specific composition generated from approved design system primitives");
   });
 
   it("surfaces detected prompt intent in the generation evidence", () => {

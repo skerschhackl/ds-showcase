@@ -3,9 +3,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  LiveComposerResponseJsonSchema,
+  PageComposerResponseJsonSchema,
   approvedComponentNames,
-  normalizeLiveComposerResponse,
+  clampAllowedComponents,
+  normalizeUnsupportedComponents,
+  parsePageComposerResponse,
   parseGenerateRequest
 } from "@ds/ai-contracts";
 
@@ -26,7 +28,7 @@ export function createComposerConfig(env = process.env) {
     maxRequestBodyBytes: Number(env.MAX_REQUEST_BODY_BYTES ?? 64 * 1024),
     requestBodyTimeoutMs: Number(env.REQUEST_BODY_TIMEOUT_MS ?? 5000),
     modelRequestTimeoutMs: Number(env.MODEL_REQUEST_TIMEOUT_MS ?? (provider === "ollama" ? 120000 : 45000)),
-    corsOrigin: env.CORS_ORIGIN ?? "http://127.0.0.1:5173",
+    corsOrigins: parseCorsOrigins(env.CORS_ORIGIN),
     openAiApiKey: env.OPENAI_API_KEY,
     ollamaTemperature: Number(env.OLLAMA_TEMPERATURE ?? 0.2)
   };
@@ -42,7 +44,7 @@ export async function loadComposerContext() {
   );
 
   return {
-    schema: LiveComposerResponseJsonSchema,
+    schema: PageComposerResponseJsonSchema,
     contracts: contracts.join("\n\n")
   };
 }
@@ -60,7 +62,7 @@ export function createComposerServer({
 }
 
 export async function handleComposerRequest(request, response, { composerContext, config, fetchJson = fetchJsonWithTimeout }) {
-  setCorsHeaders(response, config);
+  setCorsHeaders(request, response, config);
 
   if (request.method === "OPTIONS") {
     response.writeHead(204);
@@ -130,6 +132,9 @@ async function generateWithOpenAI(response, composerContext, config, fetchJson, 
     return;
   }
 
+  const selectedComponents = selectComposerComponents(prompt, requestedComponents);
+  const composerContextForPrompt = selectComposerContext(composerContext, selectedComponents);
+
   const apiResult = await fetchJson("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
@@ -141,7 +146,7 @@ async function generateWithOpenAI(response, composerContext, config, fetchJson, 
       input: [
         {
           role: "system",
-          content: buildSystemPrompt(composerContext, requestedComponents)
+          content: buildSystemPrompt(composerContextForPrompt, selectedComponents)
         },
         {
           role: "user",
@@ -151,8 +156,8 @@ async function generateWithOpenAI(response, composerContext, config, fetchJson, 
       text: {
         format: {
           type: "json_schema",
-          name: "design_system_screen",
-          schema: composerContext.schema,
+          name: "design_system_page",
+          schema: composerContextForPrompt.schema,
           strict: false
         }
       }
@@ -198,10 +203,12 @@ async function generateWithOpenAI(response, composerContext, config, fetchJson, 
 }
 
 async function generateWithOllama(response, composerContext, config, fetchJson, prompt, requestedComponents) {
+  const selectedComponents = selectComposerComponents(prompt, requestedComponents);
+  const composerContextForPrompt = selectComposerContext(composerContext, selectedComponents);
   const ollamaPrompt = [
-    buildSystemPrompt(composerContext, requestedComponents),
+    buildSystemPrompt(composerContextForPrompt, selectedComponents),
     "Return JSON matching this schema:",
-    JSON.stringify(composerContext.schema),
+    JSON.stringify(composerContextForPrompt.schema),
     "User prompt:",
     prompt
   ].join("\n\n");
@@ -266,33 +273,120 @@ async function generateWithOllama(response, composerContext, config, fetchJson, 
 
 export function buildSystemPrompt(composerContext, requestedComponents) {
   return [
-    "You are an AI design-system composer.",
+    "You are an AI design-system page composer.",
     "Return one JSON object and no prose.",
     "Do not return JSX, HTML, CSS, markdown, or comments.",
     `Allowed components: ${requestedComponents.join(", ")}.`,
-    "If the user asks for a component or pattern outside the allowed set, include it in unsupported and compose the closest approved fallback.",
+    "Return the v2 page-composition shape with top-level title, summary, components, unsupported, and page.sections.",
+    "Do not return the old v1 screen shape. Do not include a top-level screen property.",
+    "Every page section must use one of these section types: hero, pageHeader, form, cardGrid, stats, table, alert, cta, tabs.",
+    "The top-level components array is only for approved component names. Do not put section types such as hero, form, cardGrid, stats, cta, pageHeader, or tabs in components.",
+    "Compose varied pages from sections instead of forcing every prompt into alert, metrics, fields, and table.",
+    "For a landing page, prefer hero, form, cardGrid, alert, and cta sections. For an operational app screen, prefer pageHeader, stats, form, table, and alert sections.",
+    "If the user asks for a component or pattern outside the allowed set, include it in unsupported and compose the closest approved fallback. Do not pretend the unsupported component exists.",
     "If the user asks for an exact heading or title, set the top-level title to that exact heading text.",
-    "If the user asks for a page-level button action such as download all entries or export all data shown, include that exact action label in primaryAction or secondaryAction.",
-    "If the user asks for a row-level button action such as delete, remove, approve, archive, retry, download per member, or export per row, include that exact action label as an action-cell object in the relevant table row.",
-    "Use Table for comparable row data. Use action-cell objects inside table rows when the user requests row actions like delete, remove, approve, archive, export, download, or retry. The only valid table action-cell object shape is { \"action\": \"Label\", \"variant\": \"secondary\" }; do not emit JSX-like Button objects, component objects, nested props, or children.",
+    "If the user asks for page-level actions, include those labels in section actions.",
+    "Use Table only for comparable row data. Use action-cell objects inside table rows when the user requests row actions like delete, remove, approve, archive, export, download, book, or retry. The only valid table action-cell object shape is { \"action\": \"Label\", \"variant\": \"secondary\" }; do not emit JSX-like Button objects, component objects, nested props, or children.",
     "Use Badge objects for status cells. Use Alert for system feedback. Use Input and Select for visible labeled controls. Use Textarea for long-form prompts, notes, descriptions, comments, and review feedback.",
-    "Keep title, labels, and actions specific to the user's prompt.",
+    "Keep titles, labels, section content, and actions specific to the user's prompt.",
+    "If the user asks for dates but Date picker is not available, add Date picker to unsupported and use Input as the visible fallback.",
     "Component contracts:",
     composerContext.contracts
   ].join("\n\n");
 }
 
 function sendModelOutput(response, payload, prompt) {
-  const normalized = normalizeLiveComposerResponse(payload, fallbackTitleFromPrompt(prompt));
+  const parsed = parsePageComposerResponse(payload);
+
+  if (!parsed.success) {
+    sendJson(response, 502, {
+      error: "Model response did not match the v2 page schema",
+      diagnostics: parsed.error.issues.map(formatZodIssue),
+      output: payload
+    });
+    return;
+  }
+
   const explicitHeading = headingFromPrompt(prompt);
+  const normalizedUnsupported = normalizeUnsupportedComponents(parsed.data.unsupported, parsed.data.components);
   const data = explicitHeading
-    ? { ...normalized.data, title: normalizeHeading(explicitHeading) }
-    : normalized.data;
-  const responsePayload = normalized.diagnostics.length
-    ? { ...data, diagnostics: normalized.diagnostics }
-    : data;
+    ? { ...parsed.data, title: normalizeHeading(explicitHeading) }
+    : parsed.data;
+  const responsePayload = {
+    ...data,
+    components: clampAllowedComponents(data.components),
+    unsupported: normalizedUnsupported
+  };
 
   sendJson(response, 200, responsePayload);
+}
+
+function selectComposerContext(composerContext, selectedComponents) {
+  return {
+    schema: composerContext.schema,
+    contracts: contractSectionsForComponents(composerContext.contracts, selectedComponents).join("\n\n")
+  };
+}
+
+function contractSectionsForComponents(contracts, selectedComponents) {
+  const sections = [];
+
+  for (const component of selectedComponents) {
+    const match = contracts.match(new RegExp(`(^|\\n)# ${component}\\n[\\s\\S]*?(?=\\n# [A-Z]|$)`));
+
+    if (match?.[0]) {
+      sections.push(match[0].trim());
+    }
+  }
+
+  return sections.length ? sections : [contracts];
+}
+
+function selectComposerComponents(prompt, requestedComponents) {
+  const requested = new Set(requestedComponents);
+  const normalized = prompt.toLowerCase();
+  const selected = new Set(["Card", "Button"]);
+  const maybeAdd = (component) => {
+    if (requested.has(component)) {
+      selected.add(component);
+    }
+  };
+
+  if (/(alert|warning|error|notice|gap|unsupported|failed|recovery)/.test(normalized)) {
+    maybeAdd("Alert");
+  }
+
+  if (/(status|state|badge|role|plan|fare|travel|flight|booking|priority|category)/.test(normalized)) {
+    maybeAdd("Badge");
+    maybeAdd("Select");
+  }
+
+  if (/(form|field|input|email|name|search|filter|from|to|date|passenger|cabin|booking|flight|settings|create|edit)/.test(normalized)) {
+    maybeAdd("Input");
+  }
+
+  if (/(select|dropdown|filter|role|plan|passenger|cabin|priority|category)/.test(normalized)) {
+    maybeAdd("Select");
+  }
+
+  if (/(table|list|row|rows|history|invoice|members|records|compare)/.test(normalized)) {
+    maybeAdd("Table");
+    maybeAdd("Badge");
+  }
+
+  if (/(tab|tabs|section)/.test(normalized)) {
+    maybeAdd("Tabs");
+  }
+
+  if (/(textarea|long-form|long form|notes?|comments?|description|feedback|message)/.test(normalized)) {
+    maybeAdd("Textarea");
+  }
+
+  if (/(load|loading|spinner|pending)/.test(normalized)) {
+    maybeAdd("Spinner");
+  }
+
+  return Array.from(selected).filter((component) => requested.has(component));
 }
 
 async function readJsonBody(request, config) {
@@ -458,10 +552,23 @@ function getProviderMode(config) {
   return config.openAiApiKey ? "openai-live" : "missing-api-key";
 }
 
-function setCorsHeaders(response, config) {
-  response.setHeader("Access-Control-Allow-Origin", config.corsOrigin);
+function parseCorsOrigins(corsOrigin) {
+  return (corsOrigin ?? "http://127.0.0.1:5173,http://localhost:5173")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
+function setCorsHeaders(request, response, config) {
+  const requestOrigin = request.headers.origin;
+  const allowedOrigin = config.corsOrigins.includes(requestOrigin)
+    ? requestOrigin
+    : config.corsOrigins[0];
+
+  response.setHeader("Access-Control-Allow-Origin", allowedOrigin);
   response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  response.setHeader("Vary", "Origin");
 }
 
 function sendJson(response, status, payload) {

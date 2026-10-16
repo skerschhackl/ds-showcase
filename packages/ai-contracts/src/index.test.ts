@@ -8,6 +8,7 @@ import {
   normalizeLiveComposerResponse,
   parseGenerateRequest,
   parseLiveComposerResponse,
+  parsePageComposerResponse,
   unsupportedComponentNames
 } from "./index.js";
 
@@ -71,6 +72,97 @@ describe("shared AI contracts", () => {
     });
 
     expect(parsed.success).toBe(true);
+  });
+
+  it("validates page composer responses with governed sections", () => {
+    const parsed = parsePageComposerResponse({
+      title: "Flight Booking",
+      summary: "Search and compare flights.",
+      components: ["Card", "Button", "Input", "Select", "Alert"],
+      unsupported: ["Date picker"],
+      page: {
+        sections: [
+          {
+            type: "hero",
+            eyebrow: "Flight booking",
+            title: "Book your next trip",
+            body: "Search flexible routes and fares.",
+            actions: [{ label: "Search flights", variant: "primary" }]
+          },
+          {
+            type: "form",
+            title: "Find a flight",
+            fields: [
+              { label: "From", kind: "input" },
+              { label: "To", kind: "input" },
+              { label: "Passengers", kind: "select", options: ["1 passenger", "2 passengers"] }
+            ],
+            actions: [{ label: "Search flights", variant: "primary" }]
+          },
+          {
+            type: "cardGrid",
+            title: "Popular routes",
+            cards: [
+              {
+                title: "Weekend escapes",
+                body: "Short-haul flights with flexible timing.",
+                badge: { text: "Flexible", tone: "success" }
+              }
+            ]
+          }
+        ]
+      }
+    });
+
+    expect(parsed.success).toBe(true);
+  });
+
+  it("accepts section-led page output while clamping section names out of component evidence", () => {
+    const parsed = parsePageComposerResponse({
+      title: "Catalog Landing Page",
+      summary: "A catalog experience with product listings and search.",
+      components: ["Card", "Input", "Button", "cardGrid", "cta"],
+      unsupported: [],
+      page: {
+        sections: [
+          {
+            type: "hero",
+            title: "Explore the catalog",
+            body: "Browse featured items and find the right product quickly.",
+            actions: []
+          },
+          {
+            type: "form",
+            fields: [{ label: "Search", kind: "input" }],
+            actions: [{ label: "Search", variant: "primary" }]
+          },
+          {
+            type: "cardGrid",
+            title: "Featured items",
+            cards: [
+              {
+                title: "Starter bundle",
+                body: "A curated option for new customers.",
+                badge: { text: "Featured", tone: "primary" },
+                action: { label: "View details", variant: "secondary" }
+              }
+            ]
+          },
+          {
+            type: "cta",
+            title: "Browse all items",
+            body: "",
+            actions: [{ label: "Open catalog", variant: "primary" }]
+          }
+        ]
+      }
+    });
+
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) {
+      throw parsed.error;
+    }
+    expect(parsed.data.components).toEqual(["Card", "Input", "Button"]);
   });
 
   it("normalizes unsupported component gaps even when the model response is schema-valid", () => {

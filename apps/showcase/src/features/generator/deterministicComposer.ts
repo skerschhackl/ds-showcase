@@ -1,4 +1,4 @@
-import { detectUnsupportedComponentRequests } from "@ds/ai-contracts";
+import { detectUnsupportedComponentRequests, type GeneratedPage, type PageAction, type PageSection } from "@ds/ai-contracts";
 import { inferScreenKind, type GeneratedScreen, type TableCell } from "../../liveComposer";
 import type { ComplianceItem, GeneratedOutput } from "../../showcaseTypes";
 import { extractActionIntents } from "./actionIntents";
@@ -13,6 +13,7 @@ export function buildCustomOutput(prompt: string): GeneratedOutput {
   const approvedComponents = selectApprovedComponents(cleanPrompt);
   const hasGaps = unsupportedComponents.length > 0;
   const screen = buildGeneratedScreen(cleanPrompt, title, unsupportedComponents);
+  const page = buildGeneratedPage(cleanPrompt, title, screen, unsupportedComponents);
   const baseCompliance: ComplianceItem[] = [
     {
       label: "Components",
@@ -40,6 +41,7 @@ export function buildCustomOutput(prompt: string): GeneratedOutput {
     approvedComponents,
     unsupportedComponents,
     fingerprint: promptFingerprint(cleanPrompt),
+    page,
     screen
   };
 }
@@ -60,7 +62,7 @@ function selectApprovedComponents(prompt: string) {
     components.add("Textarea");
   }
 
-  if (/(role|status|state|filter|category|plan|type|priority)/.test(normalized)) {
+  if (/(role|status|state|filter|category|plan|type|priority|flight|train|rail|station|booking|travel|destination|fare|passenger|cabin|landing)/.test(normalized)) {
     components.add("Select");
     components.add("Badge");
   }
@@ -75,6 +77,316 @@ function selectApprovedComponents(prompt: string) {
   }
 
   return Array.from(components);
+}
+
+function buildGeneratedPage(
+  prompt: string,
+  title: string,
+  screen: GeneratedScreen,
+  unsupportedComponents: string[]
+): GeneratedPage {
+  if (unsupportedComponents.length) {
+    return {
+      sections: [
+        {
+          type: "pageHeader",
+          eyebrow: "Needs system review",
+          title,
+          body: "The prompt requested patterns outside the approved component set, so this page uses governed fallbacks.",
+          actions: [{ label: "Request component", variant: "primary" }]
+        },
+        {
+          type: "alert",
+          tone: "warning",
+          title: "Component gap found",
+          body: `${unsupportedComponents.join(", ")} ${unsupportedComponents.length === 1 ? "is" : "are"} not in the design system yet.`
+        },
+        {
+          type: "table",
+          title: "Fallback plan",
+          columns: ["Requested pattern", "Status", "Fallback"],
+          rows: unsupportedComponents.map((component) => [
+            component,
+            { text: "Not available", tone: "danger" },
+            "Use approved components until governed"
+          ])
+        }
+      ]
+    };
+  }
+
+  const travelBookingMode = detectTravelBookingMode(prompt);
+
+  if (travelBookingMode) {
+    return buildTravelBookingPage(travelBookingMode);
+  }
+
+  const kind = inferScreenKind(prompt);
+
+  if (kind === "billing") {
+    return {
+      sections: [
+        {
+          type: "pageHeader",
+          eyebrow: "Workspace billing",
+          title,
+          body: "Review plan, payment, and invoice details in one governed workspace.",
+          actions: [
+            { label: screen.primaryAction, variant: "primary" },
+            { label: screen.secondaryAction, variant: "secondary" }
+          ]
+        },
+        { type: "stats", title: "Billing summary", metrics: screen.metrics },
+        { type: "form", title: "Payment settings", fields: screen.fields, actions: [{ label: "Save billing", variant: "primary" }] },
+        { type: "table", title: "Invoice history", columns: screen.table.columns, rows: screen.table.rows },
+        { type: "alert", tone: screen.alert.tone, title: screen.alert.title, body: screen.alert.body }
+      ]
+    };
+  }
+
+  if (kind === "team") {
+    return {
+      sections: [
+        {
+          type: "pageHeader",
+          eyebrow: "Access governance",
+          title,
+          body: "Manage invites, roles, and access reviews with visible status evidence.",
+          actions: [
+            { label: screen.primaryAction, variant: "primary" },
+            { label: screen.secondaryAction, variant: "secondary" }
+          ]
+        },
+        { type: "stats", title: "Team signals", metrics: screen.metrics },
+        { type: "form", title: "Invite teammate", fields: screen.fields, actions: [{ label: "Send invite", variant: "primary" }] },
+        { type: "table", title: "Members and roles", columns: screen.table.columns, rows: screen.table.rows },
+        { type: "alert", tone: screen.alert.tone, title: screen.alert.title, body: screen.alert.body }
+      ]
+    };
+  }
+
+  if (kind === "analytics") {
+    return {
+      sections: [
+        {
+          type: "pageHeader",
+          eyebrow: "Product analytics",
+          title,
+          body: "Surface adoption trends, filter the segment, and route follow-up from one page.",
+          actions: [{ label: screen.primaryAction, variant: "primary" }]
+        },
+        { type: "stats", title: "Metric overview", metrics: screen.metrics },
+        { type: "form", title: "Dashboard filters", fields: screen.fields, actions: [{ label: "Apply filters", variant: "secondary" }] },
+        { type: "table", title: "Adoption signals", columns: screen.table.columns, rows: screen.table.rows }
+      ]
+    };
+  }
+
+  if (kind === "onboarding") {
+    return {
+      sections: [
+        {
+          type: "hero",
+          eyebrow: "Onboarding",
+          title,
+          body: "Guide a new admin from setup intent to the next best action.",
+          actions: [{ label: screen.primaryAction, variant: "primary" }]
+        },
+        { type: "stats", title: "Setup progress", metrics: screen.metrics },
+        { type: "table", title: "Setup checklist", columns: screen.table.columns, rows: screen.table.rows },
+        { type: "form", title: "Workspace details", fields: screen.fields, actions: [{ label: "Save setup details", variant: "secondary" }] }
+      ]
+    };
+  }
+
+  if (kind === "empty") {
+    return {
+      sections: [
+        {
+          type: "hero",
+          eyebrow: "Empty state",
+          title,
+          body: "Explain the empty reporting area and offer a clear first action.",
+          actions: [{ label: screen.primaryAction, variant: "primary" }]
+        },
+        { type: "cardGrid", title: "Suggested next steps", cards: screen.table.rows.map((row) => ({ title: String(row[0]), body: String(row[2]), badge: badgeFromCell(row[1]) })) },
+        { type: "form", title: "Create the first item", fields: screen.fields, actions: [{ label: screen.primaryAction, variant: "primary" }] }
+      ]
+    };
+  }
+
+  if (kind === "recovery") {
+    return {
+      sections: [
+        { type: "alert", tone: screen.alert.tone, title: screen.alert.title, body: screen.alert.body },
+        { type: "stats", title: "Incident summary", metrics: screen.metrics },
+        { type: "form", title: "Recovery controls", fields: screen.fields, actions: [{ label: screen.primaryAction, variant: "primary" }] },
+        { type: "table", title: "Troubleshooting checks", columns: screen.table.columns, rows: screen.table.rows }
+      ]
+    };
+  }
+
+  return {
+    sections: [
+      {
+        type: "pageHeader",
+        eyebrow: "Generated workflow",
+        title,
+        body: "This prompt was converted into a flexible page composition using approved section patterns.",
+        actions: previewActions(screen)
+      },
+      { type: "stats", title: "Workflow summary", metrics: screen.metrics },
+      { type: "form", title: `${title} details`, fields: screen.fields, actions: [{ label: "Continue", variant: "primary" }] },
+      { type: "table", title: `${title} work items`, columns: screen.table.columns, rows: screen.table.rows }
+    ]
+  };
+}
+
+function detectTravelBookingMode(prompt: string): "flight" | "train" | "travel" | undefined {
+  if (/\b(flight|flights|airline|airlines|airport|airports|cabin)\b/i.test(prompt)) {
+    return "flight";
+  }
+
+  if (/\b(train|trains|rail|railway|station|stations|platform)\b/i.test(prompt)) {
+    return "train";
+  }
+
+  if (/\b(travel|trip|trips|destination|destinations|fare|fares|passenger|passengers)\b/i.test(prompt)) {
+    return "travel";
+  }
+
+  return undefined;
+}
+
+function buildTravelBookingPage(mode: "flight" | "train" | "travel"): GeneratedPage {
+  const copy = {
+    flight: {
+      eyebrow: "Flight booking",
+      title: "Book flights for every kind of trip",
+      body: "Search flexible fares, compare cabin options, and keep the next booking step clear for travelers.",
+      primaryAction: "Search flights",
+      secondaryAction: "Manage booking",
+      formTitle: "Find your flight",
+      formBody: "Start with route, dates, passengers, and cabin preference.",
+      originPlaceholder: "City or airport",
+      destinationPlaceholder: "Destination",
+      preferenceLabel: "Cabin",
+      preferenceOptions: ["Economy", "Premium economy", "Business"],
+      cardTitle: "Popular ways to travel",
+      cards: [
+        { title: "Weekend escapes", body: "Short-haul routes with flexible departure windows.", badge: { text: "Flexible", tone: "success" as const }, action: { label: "Explore", variant: "secondary" as const } },
+        { title: "Business routes", body: "Frequent city pairs with morning and evening options.", badge: { text: "Popular", tone: "primary" as const }, action: { label: "Compare", variant: "secondary" as const } },
+        { title: "Family trips", body: "Seat and baggage guidance surfaced before checkout.", badge: { text: "Helpful", tone: "neutral" as const }, action: { label: "Plan trip", variant: "secondary" as const } }
+      ],
+      gapTitle: "Date picker gap",
+      gapBody: "The current design system does not include a governed date picker, so date selection is represented with labeled inputs."
+    },
+    train: {
+      eyebrow: "Train booking",
+      title: "Book train trips with clear route choices",
+      body: "Search rail routes, compare departure windows, and keep fare selection simple for travelers.",
+      primaryAction: "Search trains",
+      secondaryAction: "Manage trip",
+      formTitle: "Find your train",
+      formBody: "Start with stations, dates, passengers, and seat preference.",
+      originPlaceholder: "Origin station",
+      destinationPlaceholder: "Destination station",
+      preferenceLabel: "Seat class",
+      preferenceOptions: ["Standard", "First class", "Quiet coach"],
+      cardTitle: "Popular rail options",
+      cards: [
+        { title: "Commuter routes", body: "Frequent regional departures with flexible timing.", badge: { text: "Frequent", tone: "success" as const }, action: { label: "Explore", variant: "secondary" as const } },
+        { title: "City breaks", body: "Direct routes for weekend and short-stay travel.", badge: { text: "Direct", tone: "primary" as const }, action: { label: "Compare", variant: "secondary" as const } },
+        { title: "Family fares", body: "Passenger and seating guidance surfaced before checkout.", badge: { text: "Helpful", tone: "neutral" as const }, action: { label: "Plan trip", variant: "secondary" as const } }
+      ],
+      gapTitle: "Date picker gap",
+      gapBody: "The current design system does not include a governed date picker, so date selection is represented with labeled inputs."
+    },
+    travel: {
+      eyebrow: "Travel booking",
+      title: "Plan travel with clear booking steps",
+      body: "Search routes, compare options, and keep the next booking step visible for travelers.",
+      primaryAction: "Search trips",
+      secondaryAction: "Manage trip",
+      formTitle: "Find your trip",
+      formBody: "Start with route, dates, passengers, and travel preference.",
+      originPlaceholder: "Origin",
+      destinationPlaceholder: "Destination",
+      preferenceLabel: "Preference",
+      preferenceOptions: ["Flexible", "Fastest", "Lowest fare"],
+      cardTitle: "Popular travel options",
+      cards: [
+        { title: "Weekend trips", body: "Short itineraries with flexible departure windows.", badge: { text: "Flexible", tone: "success" as const }, action: { label: "Explore", variant: "secondary" as const } },
+        { title: "Work travel", body: "Frequent routes with morning and evening options.", badge: { text: "Popular", tone: "primary" as const }, action: { label: "Compare", variant: "secondary" as const } },
+        { title: "Group travel", body: "Passenger guidance surfaced before checkout.", badge: { text: "Helpful", tone: "neutral" as const }, action: { label: "Plan trip", variant: "secondary" as const } }
+      ],
+      gapTitle: "Date picker gap",
+      gapBody: "The current design system does not include a governed date picker, so date selection is represented with labeled inputs."
+    }
+  }[mode];
+
+  return {
+    sections: [
+      {
+        type: "hero",
+        eyebrow: copy.eyebrow,
+        title: copy.title,
+        body: copy.body,
+        actions: [
+          { label: copy.primaryAction, variant: "primary" },
+          { label: copy.secondaryAction, variant: "secondary" }
+        ]
+      },
+      {
+        type: "form",
+        title: copy.formTitle,
+        body: copy.formBody,
+        fields: [
+          { label: "From", kind: "input", placeholder: copy.originPlaceholder },
+          { label: "To", kind: "input", placeholder: copy.destinationPlaceholder },
+          { label: "Depart", kind: "input", placeholder: "Select date" },
+          { label: "Return", kind: "input", placeholder: "Optional return date" },
+          { label: "Passengers", kind: "select", options: ["1 passenger", "2 passengers", "3 passengers", "4 passengers"] },
+          { label: copy.preferenceLabel, kind: "select", options: copy.preferenceOptions }
+        ],
+        actions: [{ label: copy.primaryAction, variant: "primary" }]
+      },
+      {
+        type: "cardGrid",
+        title: copy.cardTitle,
+        body: "Reusable cards keep options scannable without introducing custom artwork.",
+        cards: copy.cards
+      },
+      {
+        type: "alert",
+        tone: "neutral",
+        title: copy.gapTitle,
+        body: copy.gapBody
+      },
+      {
+        type: "cta",
+        title: "Need to change an existing trip?",
+        body: "Use the same approved actions to route travelers toward booking management.",
+        actions: [{ label: copy.secondaryAction, variant: "secondary" }]
+      }
+    ]
+  };
+}
+
+function previewActions(screen: GeneratedScreen): PageAction[] {
+  return [screen.primaryAction, screen.secondaryAction]
+    .filter((label) => !/^(continue|review assumptions|use fallback)$/i.test(label))
+    .map((label, index) => ({ label, variant: index === 0 ? "primary" : "secondary" }));
+}
+
+function badgeFromCell(cell: TableCell): Extract<PageSection, { type: "cardGrid" }>["cards"][number]["badge"] {
+  return typeof cell === "object" && cell !== null && "text" in cell
+    ? { text: String(cell.text), tone: "tone" in cell && isBadgeTone(cell.tone) ? cell.tone : "neutral" }
+    : undefined;
+}
+
+function isBadgeTone(value: unknown): value is "neutral" | "primary" | "success" | "warning" | "danger" {
+  return value === "neutral" || value === "primary" || value === "success" || value === "warning" || value === "danger";
 }
 
 function buildGeneratedScreen(prompt: string, title: string, unsupportedComponents: string[]): GeneratedScreen {

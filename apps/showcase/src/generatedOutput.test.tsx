@@ -105,6 +105,7 @@ describe("deterministic generated output", () => {
         }
       ]
     ];
+    output.page = undefined;
 
     const markup = renderToStaticMarkup(createElement(CustomGeneratedScreen, { output }));
 
@@ -112,6 +113,45 @@ describe("deterministic generated output", () => {
     expect(markup).toContain(">Edit</button>");
     expect(markup).toContain(">Remove</button>");
     expect(markup).not.toContain("[object Object]");
+  });
+
+  it("renders a flight prompt as a page composition instead of a generic workflow", () => {
+    const output = buildCustomOutput("Generate a flight booking landing page");
+    const markup = renderToStaticMarkup(createElement(CustomGeneratedScreen, { output }));
+
+    expect(output.page?.sections.map((section) => section.type)).toEqual([
+      "hero",
+      "form",
+      "cardGrid",
+      "alert",
+      "cta"
+    ]);
+    expect(markup).toContain("Generated page composition");
+    expect(markup).toContain("Book flights for every kind of trip");
+    expect(markup).toContain("Find your flight");
+    expect(markup).toContain("Popular ways to travel");
+    expect(markup).toContain("Date picker gap");
+    expect(markup).not.toContain("Flight Booking Landing Page intake");
+  });
+
+  it("does not reuse flight-specific local copy for train booking prompts", () => {
+    const output = buildCustomOutput("Generate a train booking landing page");
+    const markup = renderToStaticMarkup(createElement(CustomGeneratedScreen, { output }));
+
+    expect(markup).toContain("Train booking");
+    expect(markup).toContain("Book train trips with clear route choices");
+    expect(markup).toContain("Find your train");
+    expect(markup).not.toContain("Book flights for every kind of trip");
+    expect(markup).not.toContain("Find your flight");
+  });
+
+  it("keeps generated page output on existing starter prompts", () => {
+    const output = buildCustomOutput("Create a team management screen with roles, invites, and access review.");
+    const markup = renderToStaticMarkup(createElement(CustomGeneratedScreen, { output }));
+
+    expect(output.page?.sections.some((section) => section.type === "pageHeader")).toBe(true);
+    expect(markup).toContain("Members and roles");
+    expect(markup).toContain("Invite teammate");
   });
 
   it("does not render a fake action result simulator", () => {
